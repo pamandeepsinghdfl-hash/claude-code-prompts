@@ -127,8 +127,8 @@ video:
   # Background music
   music_volume: 0.10            # original audio stays at 1.0
   music_dir: "data/music"
-  # Watermark / channel handle (optional, leave empty to disable)
-  watermark_text: ""
+  # Watermark / channel handle (small, top-right, semi-transparent)
+  watermark_text: "@dailydecoded"
 
 # ─── Thumbnail ────────────────────────────────────────────────────────────
 thumbnail:
@@ -147,20 +147,25 @@ metadata:
   description_template: |
     {summary}
 
+    🌍 Daily Decoded — the world's viral moments, translated to English.
+    📺 6 new Shorts every day · 04:00 / 08:00 / 12:00 / 16:00 / 20:00 / 00:00 UTC
+    👉 Subscribe → https://youtube.com/@dailydecoded
+
     🎬 Original video: {source_url}
     🕒 Clip from {clip_start}–{clip_end} of original
-    🎙️ Credit: {creator_name} ({country} · {language})
+    🎙️ Credit: {creator_name} ({country} · original language: {language})
 
-    👉 Subscribe for daily viral Shorts from around the world!
+    All clips used under fair-use commentary with full English captions and
+    creator attribution. Bridging cultures, one Short at a time.
 
     {hashtags}
   default_hashtags:
     - "#Shorts"
+    - "#DailyDecoded"
     - "#Viral"
-    - "#GlobalWisdom"
-    - "#LifeLessons"
-    - "#Motivation"
-    - "#Trending"
+    - "#GlobalShorts"
+    - "#EnglishCaptions"
+    - "#TranslatedShorts"
 
 # ─── Fallback (when no copyright-safe source is found) ────────────────────
 fallback:
