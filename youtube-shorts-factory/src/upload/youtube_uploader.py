@@ -122,4 +122,30 @@ class YouTubeUploader:
                 log.info("Thumbnail attached to %s", video_id)
             except HttpError as e:
                 log.warning("Thumbnail upload failed (channel may need verification): %s", e)
+
         return video_id
+
+    # Tactic 4: post + heart a hook question as the first comment to
+    # juice first-hour engagement velocity. Hearting it pins it to the
+    # top automatically.
+    def post_pinned_question(self, video_id: str, question: str) -> Optional[str]:
+        if not question:
+            return None
+        try:
+            thread = self.yt.commentThreads().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "videoId": video_id,
+                        "topLevelComment": {
+                            "snippet": {"textOriginal": question[:9000]}
+                        },
+                    }
+                },
+            ).execute()
+            comment_id = thread["snippet"]["topLevelComment"]["id"]
+            log.info("Pinned hook question on %s", video_id)
+            return comment_id
+        except HttpError as e:
+            log.warning("Pinned comment failed for %s: %s", video_id, e)
+            return None

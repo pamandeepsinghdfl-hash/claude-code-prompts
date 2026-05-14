@@ -4,26 +4,27 @@
 schedule:
   # Daily orchestrator runs at this UTC time
   run_at_utc: "00:00"
-  # Number of Shorts produced + scheduled per day
-  shorts_per_day: 4
+  # Algorithm-cracked plan: 6 Shorts/day series format (Part 1/6 → 6/6)
+  shorts_per_day: 6
   # Even-spaced publish slots (UTC). Must contain `shorts_per_day` entries.
+  # Posting-time consistency = algorithm signal #6.
   publish_slots_utc:
-    - "06:00"
+    - "04:00"
+    - "08:00"
     - "12:00"
-    - "18:00"
+    - "16:00"
+    - "20:00"
     - "00:00"   # next day midnight
   privacy_status: "private"   # private | public | unlisted (will flip to public via publishAt)
 
-# ─── Niches the factory rotates through ───────────────────────────────────
-# One niche per slot, in order. If fewer niches than slots, list wraps.
+# ─── Hero niches (algorithm signal #4: returning_viewer_ratio) ────────────
+# Lock to 3 hero niches that rotate by DAY (not by slot). All 6 daily
+# Shorts share one niche → returning viewers, audience identity, and a
+# clean topic-cluster signal for the algorithm.
 niches:
-  - motivation_life_lessons
-  - mind_blowing_facts
   - viral_interviews_podcasts
+  - mind_blowing_facts
   - inspiring_stories
-  - history_and_myths
-  - science_breakthroughs
-  - global_news_explainers
 
 # ─── Global sourcing config ───────────────────────────────────────────────
 sourcing:
@@ -64,28 +65,32 @@ sourcing:
 
 # ─── Copyright safety ─────────────────────────────────────────────────────
 copyright:
-  # 0–100. Lower the bar to accept more (riskier) sources.
-  min_safety_score: 65
+  # Algorithm-cracked plan: tighter safety floor (was 65). Strikes
+  # tank ranking + risk channel termination — both ruin the math.
+  min_safety_score: 80
   prefer_licenses:
     - "creativeCommon"   # YouTube videoLicense value
   # If best candidate score < threshold, fall back to public-domain factory.
-  fallback_below_score: 55
+  fallback_below_score: 70
 
 # ─── Viral scoring weights ────────────────────────────────────────────────
+# Rebalanced: hook strength is the #1 driver of breakout probability, so
+# we weight it heaviest. Engagement velocity (signal #5) matters more
+# than raw view count for predicting algorithm love.
 viral:
-  weight_views: 0.30
-  weight_engagement_velocity: 0.30   # (likes+comments)/age_hours
-  weight_cross_cultural: 0.20        # appears trending across >=2 regions
-  weight_hook_strength: 0.20         # LLM-rated hook potency
-  min_score: 55
+  weight_views: 0.20
+  weight_engagement_velocity: 0.30
+  weight_cross_cultural: 0.20
+  weight_hook_strength: 0.30         # was 0.20 — reward LLM-rated hooks more
+  min_score: 60
 
 # ─── Clip selection (viral moment detection) ──────────────────────────────
 clip:
-  target_duration_seconds: 45
+  target_duration_seconds: 38
   min_duration_seconds: 18
-  max_duration_seconds: 60
+  max_duration_seconds: 55
   # How many candidate moments the LLM should propose per source video
-  candidates_per_source: 3
+  candidates_per_source: 5    # was 3 — wider net = better hook picks
 
 # ─── Captions (mandatory English, TikTok-style) ───────────────────────────
 captions:
@@ -93,16 +98,16 @@ captions:
   translate_if_not_english: true
   style:
     font: "Montserrat-Black.ttf"     # bundled in data/fonts
-    font_size: 72
+    font_size: 80                    # bigger = better mobile retention
     stroke_color: "black"
-    stroke_width: 6
+    stroke_width: 8                  # was 6 — more pop on small screens
     fill_color: "white"
     highlight_color: "#FFD400"       # active-word highlight (karaoke)
     position: "center"               # center | bottom | top
-    max_chars_per_line: 22
+    max_chars_per_line: 20           # tighter line = easier on eyes
     max_lines: 2
-    fade_ms: 80
-    pop_scale: 1.12                  # micro pop on word boundary
+    fade_ms: 60
+    pop_scale: 1.18                  # was 1.12 — more aggressive entrance anim
   safe_margin_px: 80               # top/bottom safe area for mobile
 
 # ─── Video output ─────────────────────────────────────────────────────────

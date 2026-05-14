@@ -26,17 +26,30 @@ log = logging.getLogger("shorts_factory.viral")
 class ClipCandidate:
     start_s: float
     end_s: float
-    hook: str           # short, punchy, English
+    hook: str           # short, punchy, English — overlaid at t=0
     reason: str         # why this clip is compelling
     viral_score: float  # 0–100
+    loop_close: str = ""        # English line for last 1s (echoes hook for perfect loop)
+    comment_bait: str = ""      # question we pin as first comment
 
 
-SYSTEM = """You are a world-class YouTube Shorts producer. You watch trending
-clips from podcasts, interviews, news, and motivational videos worldwide and
-ruthlessly identify the moments most likely to go viral on vertical short-form
-video (TikTok-style). You think in HOOKS, PUNCHLINES, EMOTIONAL PEAKS, and
-SURPRISING FACTS. You speak fluent English and translate any non-English line
-naturally to crisp, mobile-readable English.""".strip()
+SYSTEM = """You are a world-class YouTube Shorts producer who cracks the
+algorithm by minimizing swipe-away in the first 1.5 seconds and maximizing
+loop replays + session continuation. You watch trending clips from podcasts,
+interviews, news, and motivational videos worldwide and ruthlessly identify
+the moments most likely to dominate vertical short-form. You think in HOOKS,
+PUNCHLINES, EMOTIONAL PEAKS, and SURPRISING FACTS.
+
+NON-NEGOTIABLE RULES:
+  1. The first 1.5 seconds MUST be a hook — a startling claim, a question,
+     a surprising fact, or an emotional peak. If the natural moment doesn't
+     open that way, SHIFT the start point earlier to capture one, OR mark
+     the opening English caption to scream the hook BEFORE the voice begins.
+  2. End the clip on a question, a cliffhanger, or a visual that loops
+     back to the opening — NEVER on a fade-out, "thanks for watching",
+     or trailing silence. Loop-perfect endings double rewatch rate.
+  3. You speak fluent English and translate any non-English line naturally
+     to crisp, mobile-readable English.""".strip()
 
 
 def _prompt(transcript: List[dict], cfg: ClipCfg, n: int) -> str:
@@ -73,7 +86,9 @@ Respond as STRICT JSON of the shape:
     {{
       "start": <float seconds>,
       "end": <float seconds>,
-      "hook_english": "<one-line English hook for caption overlay>",
+      "hook_english": "<3-7 word English hook overlaid at t=0 BEFORE voice>",
+      "loop_close": "<3-6 word English line for the last 1s that ECHOES the hook for perfect loop>",
+      "comment_bait": "<one provocative English question to pin as first comment>",
       "reason": "<one sentence why this clip will pop>",
       "viral_score": <0-100>
     }}
@@ -113,6 +128,8 @@ def detect_viral_moments(
                     hook=c.get("hook_english", "").strip(),
                     reason=c.get("reason", "").strip(),
                     viral_score=float(c.get("viral_score", 0)),
+                    loop_close=c.get("loop_close", "").strip(),
+                    comment_bait=c.get("comment_bait", "").strip(),
                 )
             )
         except (KeyError, ValueError, TypeError) as e:

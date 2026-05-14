@@ -41,8 +41,14 @@ def render_short(
     cfg: VideoCfg,
     background_music: Optional[Path] = None,
     fonts_dir: str = "data/fonts",
+    clip_duration_s: float = 0.0,
+    subscribe_cta: bool = True,
 ) -> Path:
-    """Render the final 9:16 Short with burnt-in captions."""
+    """Render the final 9:16 Short with burnt-in captions.
+
+    `subscribe_cta=True` overlays a red SUBSCRIBE prompt at the 70% point
+    — the single biggest lever for subscribe-rate-from-Short.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ─── Video graph ──────────────────────────────────────────────────────
@@ -71,6 +77,37 @@ def render_short(
     # 3) Burn in captions (ASS gives us per-word karaoke + animations).
     ass_escaped = str(ass_captions).replace("\\", "/").replace(":", "\\:")
     v = v.filter("ass", f"{ass_escaped}:fontsdir={fonts_dir}")
+
+    # Tactic 5: SUBSCRIBE CTA at the 70% point — biggest lever for
+    # subscribe-from-Short rate. Red box, bold white text, mid-screen.
+    if subscribe_cta and clip_duration_s > 4:
+        cta_start = clip_duration_s * 0.65
+        cta_end = min(clip_duration_s * 0.95, clip_duration_s - 0.3)
+        v = v.filter(
+            "drawtext",
+            text=r"\xe2\x86\x93 TAP SUBSCRIBE",
+            fontfile=f"{fonts_dir}/Montserrat-Black.ttf",
+            fontsize=58,
+            fontcolor="white",
+            box=1,
+            boxcolor="red@0.88",
+            boxborderw=14,
+            x="(w-tw)/2",
+            y="h*0.78",
+            enable=f"between(t,{cta_start:.2f},{cta_end:.2f})",
+        )
+
+    # Tactic 2 (visual half): loop-perfect tail — short crossfade at the
+    # very end so the YouTube replay feels seamless.
+    if clip_duration_s > 1.5:
+        v = v.filter(
+            "fade",
+            type="out",
+            start_time=f"{max(clip_duration_s - 0.3, 0.1):.2f}",
+            duration=0.3,
+            color="black",
+            alpha=1,
+        )
 
     # Optional watermark/handle
     if cfg.watermark_text:

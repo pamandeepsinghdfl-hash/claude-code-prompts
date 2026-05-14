@@ -91,7 +91,16 @@ NICHE_KEYWORDS: Dict[str, List[str]] = {
 
 
 def _niche_for_slot(niches: List[str], slot_index: int) -> str:
-    return niches[slot_index % len(niches)]
+    """Tactic 3 + 7: lock ALL of today's slots to ONE niche (series format).
+
+    The slot index isn't used for niche choice anymore — instead the niche
+    rotates by *day*, not by slot. This turns the 6 daily Shorts into a
+    Part 1/6 → Part 6/6 series, which boosts session continuation and
+    returning-viewer ratio (the two highest-leverage algorithm signals
+    after swipe-away).
+    """
+    today_idx = datetime.now(timezone.utc).timetuple().tm_yday
+    return niches[today_idx % len(niches)]
 
 
 def _slot_publish_datetime(slot_hhmm: str, now_utc: datetime, slot_index: int) -> datetime:
@@ -125,6 +134,8 @@ def produce_one_short(
     db: Database,
     work_root: Path,
     report: RunReport,
+    slot_index: int = 0,
+    total_slots: int = 1,
 ) -> Optional[dict]:
     candidate: VideoCandidate = rank_entry["candidate"]
     log.info(
@@ -161,7 +172,9 @@ def produce_one_short(
         candidate.url, candidate.video_id, best.start_s, best.end_s
     )
 
-    # 6) Captions (ASS, karaoke style, English ALWAYS).
+    # 6) Captions (ASS, karaoke style, English ALWAYS) with hook overlay
+    #    at t=0 and a loop-close echo in the final 1s.
+    clip_duration_s = best.end_s - best.start_s
     ass_path = work_dir / "captions.ass"
     write_ass_captions(
         english,
@@ -170,9 +183,12 @@ def produce_one_short(
         cfg.video.height,
         ass_path,
         clip_offset_s=best.start_s,
+        hook_overlay=best.hook,
+        loop_close=best.loop_close or best.hook,
+        clip_duration_s=clip_duration_s,
     )
 
-    # 7) Render final Short.
+    # 7) Render final Short with subscribe CTA + loop-tail fade.
     final_path = work_root.parent / "shorts" / f"{candidate.video_id}_{publish_at.strftime('%H%M')}.mp4"
     music = pick_background_music(Path(cfg.video.music_dir))
     render_short(
@@ -182,6 +198,8 @@ def produce_one_short(
         cfg=cfg.video,
         background_music=music,
         fonts_dir="data/fonts",
+        clip_duration_s=clip_duration_s,
+        subscribe_cta=True,
     )
 
     # 8) Title, summary, hashtags from LLM.
@@ -194,9 +212,14 @@ def produce_one_short(
         niche=niche,
         max_title_chars=cfg.metadata.title_max_chars,
     )
-    title = td["title"]
+    raw_title = td["title"]
     summary = td["summary"]
     extra_tags = td.get("hashtags", [])
+
+    # Tactic 3: prepend PART N/M for the series format. This is the visible
+    # session-continuation signal — viewers who watched Part 2 will tap
+    # the channel for Part 3.
+    title = f"PART {slot_index + 1}/{total_slots} — {raw_title}"[: cfg.metadata.title_max_chars]
 
     # 9) Thumbnail.
     thumb_path = work_root.parent / "thumbnails" / f"{candidate.video_id}_{publish_at.strftime('%H%M')}.jpg"
@@ -248,6 +271,11 @@ def produce_one_short(
             thumbnail_path=thumb_path,
         )
         db.update_youtube_id(record_id, youtube_video_id)
+
+        # Tactic 4: pin a hook question as the first comment to juice
+        # first-hour engagement velocity.
+        if best.comment_bait:
+            uploader.post_pinned_question(youtube_video_id, best.comment_bait)
     else:
         log.info("DRY_RUN: not uploading %s", final_path)
 
@@ -478,6 +506,8 @@ def run_daily(config_path: Optional[str] = None) -> Path:
                     downloader=downloader,
                     uploader=uploader,
                     db=db,
+                    slot_index=slot_idx,
+                    total_slots=cfg.schedule.shorts_per_day,
                     work_root=Path("output/workdir"),
                     report=report,
                 )

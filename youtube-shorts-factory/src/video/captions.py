@@ -100,11 +100,19 @@ def write_ass_captions(
     output_path: Path,
     *,
     clip_offset_s: float = 0.0,
+    hook_overlay: str = "",
+    loop_close: str = "",
+    clip_duration_s: float = 0.0,
 ) -> Path:
     """Write an ASS subtitle file for the clipped window.
 
     `clip_offset_s` lets you shift all times so they start at 0 when the
     transcript was sliced from a longer original.
+
+    `hook_overlay` is an English line forced onto the screen at t=0 for
+    1.4s, BEFORE the voice begins — this is the #1 lever for cutting
+    swipe-away rate. `loop_close` is shown for the final 1s and echoes
+    the hook so the replay feels seamless.
     """
     style = cfg.style
 
@@ -138,6 +146,32 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     )
 
     events: List[str] = []
+
+    # Tactic 1: HOOK OVERLAY at t=0 (no voice yet). The single biggest
+    # lever for cutting swipe-away rate in the first 1.5 seconds.
+    if hook_overlay:
+        hook_text = hook_overlay.replace("{", "(").replace("}", ")").upper()
+        hook_styled = (
+            f"{{\\fad(60,120)\\fscx115\\fscy115\\bord{style.stroke_width+2}"
+            f"\\1c{highlight}\\3c{outline}}}{hook_text}"
+        )
+        events.append(
+            f"Dialogue: 1,{_format_time(0)},{_format_time(1.4)},Default,,0,0,0,,{hook_styled}"
+        )
+
+    # Tactic 2: LOOP CLOSE in the last 1.0s. Echoes the hook so the loop
+    # replay feels intentional — boosts rewatch rate.
+    if loop_close and clip_duration_s > 1.2:
+        close_text = loop_close.replace("{", "(").replace("}", ")").upper()
+        close_styled = (
+            f"{{\\fad(120,80)\\fscx110\\fscy110\\bord{style.stroke_width+2}"
+            f"\\1c{highlight}\\3c{outline}}}{close_text}"
+        )
+        events.append(
+            f"Dialogue: 1,{_format_time(clip_duration_s-1.0)},"
+            f"{_format_time(clip_duration_s)},Default,,0,0,0,,{close_styled}"
+        )
+
     for chunk in chunks:
         # Build karaoke string: per-word duration in centiseconds.
         karaoke_parts: List[str] = []
