@@ -1,0 +1,65 @@
+[
+  {
+    "id": "aesop_lion_mouse",
+    "title": "The Lion and the Mouse",
+    "country": "Greece",
+    "language": "en",
+    "story": "A mighty lion once caught a tiny mouse who begged for mercy. Amused, the lion let her go. Weeks later, the lion was trapped in a hunter's net, roaring helplessly. The same little mouse heard him and chewed through the ropes. The greatest king and the smallest creature — both can save each other. Kindness has a long memory.",
+    "moral": "No act of kindness, however small, is ever wasted.",
+    "source": "Aesop's Fables, public domain"
+  },
+  {
+    "id": "panchatantra_lion_hare",
+    "title": "The Clever Hare Who Beat a Lion",
+    "country": "India",
+    "language": "en",
+    "story": "A cruel lion demanded one animal a day or he would kill them all. A small, clever hare arrived late and told the lion another lion was hiding in a well. Furious, the lion looked in — and saw his own reflection. He leapt to attack and drowned. The smallest mind can defeat the largest brute. Wisdom beats strength.",
+    "moral": "Cleverness beats raw power every time.",
+    "source": "Panchatantra, public domain"
+  },
+  {
+    "id": "japan_old_man_lump",
+    "title": "The Old Man with the Lump",
+    "country": "Japan",
+    "language": "en",
+    "story": "An old man with a lump on his cheek danced with forest spirits one night. They loved his dance so much they removed the lump as a deposit, promising to return for more. A jealous neighbor tried the same — but danced so badly the spirits angrily gave him the first lump as well. The lesson? Joy is the real magic. Greed never gets paid.",
+    "moral": "Authentic joy attracts gifts; greed attracts burdens.",
+    "source": "Japanese folktale, public domain"
+  },
+  {
+    "id": "brazil_curupira",
+    "title": "The Curupira's Trick",
+    "country": "Brazil",
+    "language": "en",
+    "story": "Deep in the Amazon lives the Curupira — a red-haired guardian whose feet point backwards. Hunters who kill more than they need find his footprints leading the wrong way, deeper and deeper into the jungle, until they are lost forever. Take only what you need. Nature keeps her own accounts.",
+    "moral": "Greed in nature returns as punishment.",
+    "source": "Brazilian folklore, public domain"
+  },
+  {
+    "id": "arab_hodja_cooking_pot",
+    "title": "The Pot That Had Babies",
+    "country": "Middle East",
+    "language": "en",
+    "story": "Nasreddin Hodja borrowed a neighbor's pot and returned it with a small one inside. 'Your pot had a baby,' he said. The neighbor, delighted, accepted. The next week Hodja borrowed the big pot again — and never returned it. 'Your pot died,' he said. 'But pots cannot die!' 'If they can have children, they can certainly die.' Be careful of bargains that are too good. Logic cuts both ways.",
+    "moral": "If a deal is too good to be true, it eventually isn't.",
+    "source": "Nasreddin Hodja tales, public domain"
+  },
+  {
+    "id": "korea_woodcutter_axe",
+    "title": "The Honest Woodcutter",
+    "country": "Korea",
+    "language": "en",
+    "story": "A poor woodcutter dropped his iron axe into a pond. A mountain spirit appeared and offered him a gold axe. 'Not mine,' he said. Then a silver axe. 'Not mine.' Finally his old iron one. 'That's mine.' Pleased, the spirit gave him all three. A jealous neighbor tried the trick — and lied. He left the pond with nothing. Honesty multiplies. Greed divides.",
+    "moral": "Honesty is the rarest currency — and the most rewarded.",
+    "source": "Korean folktale, public domain"
+  },
+  {
+    "id": "africa_anansi_wisdom",
+    "title": "Why Wisdom Is Everywhere",
+    "country": "Ghana",
+    "language": "en",
+    "story": "Anansi the spider once gathered all the world's wisdom in a giant pot, planning to keep it for himself. He tried to climb a tree carrying the pot in front of him — and kept slipping. His young son said, 'Father, tie it to your back.' Anansi was furious that even his son knew more than the wisdom in his pot. He smashed it, and wisdom scattered across the earth. That's why a little is found in everyone.",
+    "moral": "No one mind can hold all wisdom — humility is its passport.",
+    "source": "Akan folktale, public domain"
+  }
+]

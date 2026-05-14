@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  shorts-factory:
+    build: .
+    image: shorts-factory:latest
+    container_name: shorts-factory
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: UTC
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./credentials:/app/credentials       # client_secret.json + token.json
+      - ./data:/app/data                     # music, fonts, stock footage
+      - ./output:/app/output                 # rendered shorts + thumbnails
+      - ./logs:/app/logs                     # daily reports
+    # GPU is optional but recommended for whisper large-v3. Uncomment if
+    # you have NVIDIA + nvidia-container-toolkit installed.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+    command: ["python", "scheduler.py"]

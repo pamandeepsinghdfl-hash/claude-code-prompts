@@ -1,0 +1,72 @@
+name: Daily Shorts Factory
+
+# Run every day at 00:00 UTC. GitHub Actions cron is best-effort so we
+# also allow manual dispatch.
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350   # transcription + render can be slow on CPU runners
+    concurrency:
+      group: shorts-factory
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ffmpeg + fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1 fontconfig fonts-dejavu-core
+
+      - name: Install dependencies
+        run: pip install -r youtube-shorts-factory/requirements.txt
+
+      - name: Materialise secrets
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          YT_OAUTH_CLIENT_SECRET_JSON: ${{ secrets.YT_OAUTH_CLIENT_SECRET_JSON }}
+          YT_OAUTH_TOKEN_JSON: ${{ secrets.YT_OAUTH_TOKEN_JSON }}
+        working-directory: youtube-shorts-factory
+        run: |
+          cp .env.example .env
+          sed -i "s|AIzaSy_replace_me|$YOUTUBE_API_KEY|" .env
+          sed -i "s|gsk_replace_me|$GROQ_API_KEY|" .env
+          sed -i "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=$OPENAI_API_KEY|" .env
+          sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY|" .env
+          sed -i "s|^DEEPL_API_KEY=.*|DEEPL_API_KEY=$DEEPL_API_KEY|" .env
+          sed -i "s|^PIXABAY_API_KEY=.*|PIXABAY_API_KEY=$PIXABAY_API_KEY|" .env
+          mkdir -p credentials
+          echo "$YT_OAUTH_CLIENT_SECRET_JSON" > credentials/client_secret.json
+          echo "$YT_OAUTH_TOKEN_JSON" > credentials/token.json
+
+      - name: Run factory (one-shot)
+        working-directory: youtube-shorts-factory
+        run: python scheduler.py --once
+
+      - name: Upload run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-report
+          path: |
+            youtube-shorts-factory/logs/**
+            youtube-shorts-factory/output/shorts/*.mp4
+            youtube-shorts-factory/output/thumbnails/*.jpg
+          if-no-files-found: warn
+          retention-days: 14

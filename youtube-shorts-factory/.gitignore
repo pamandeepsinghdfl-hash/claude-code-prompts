@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+*.log
+.venv/
+venv/
+
+# generated artefacts
+output/shorts/*.mp4
+output/thumbnails/*.jpg
+output/raw/*
+output/workdir/*
+logs/**/*.log
+logs/**/*.json
+
+# OAuth + tokens — never commit these
+credentials/*.json
+
+# data dirs (caches)
+data/factory.db
+data/factory.db-journal
+data/music/*.mp3
+data/music/*.wav
+data/stock_footage/*.mp4
