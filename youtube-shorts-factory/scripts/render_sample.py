@@ -96,65 +96,41 @@ duration = float(probe["format"]["duration"])
 print(f"        narration duration: {duration:.2f}s, segments: {len(transcript.segments)}")
 
 
-# ─── 4. Generate procedural 9:16 background ──────────────────────────────
-# A subtle animated gradient with slow drift. Pure ffmpeg so no source video
-# is needed. In production this would be the cropped 9:16 source clip.
-print("[3/6] Generating animated 9:16 background (1080x1920)...")
-
+# ─── 4. Generate procedural 9:16 background (pure ffmpeg, fast) ──────────
+# In production this is the cropped 9:16 source video. For the demo we
+# build an animated gradient via ffmpeg's lavfi filters — no per-frame
+# Python work, runs in seconds.
+print("[3/6] Generating animated 9:16 background (1080x1920) via ffmpeg lavfi...")
 W, H = 1080, 1920
 FPS = 30
-total_frames = int(duration * FPS) + FPS  # +1s for loop tail
+total_dur = duration + 0.5
 
-
-def make_frame(t):
-    """Animated gradient + drifting particles + subtle vignette."""
-    img = Image.new("RGB", (W, H), (8, 8, 14))
-    d = ImageDraw.Draw(img)
-    # Drifting orange-yellow glow (warm = motivation niche)
-    cx = W * (0.5 + 0.12 * math.sin(t * 0.6))
-    cy = H * (0.5 + 0.10 * math.cos(t * 0.4))
-    rx = W * (0.9 + 0.10 * math.sin(t * 0.3))
-    ry = H * (0.55 + 0.06 * math.cos(t * 0.25))
-    for i in range(7):
-        alpha = int(60 - i * 8)
-        color = (180 - i * 12, 110 - i * 8, 0)
-        d.ellipse((cx - rx * (1 - i*0.08), cy - ry * (1 - i*0.08),
-                   cx + rx * (1 - i*0.08), cy + ry * (1 - i*0.08)),
-                  fill=color)
-    img = img.filter(ImageFilter.GaussianBlur(80))
-    # Particles
-    rng = np.random.default_rng(int(t * 1000) % 99999)
-    for _ in range(40):
-        x = rng.uniform(0, W)
-        y = (rng.uniform(0, H) + t * 30) % H
-        r = rng.uniform(2, 6)
-        c = int(180 + 40 * rng.uniform())
-        d2 = ImageDraw.Draw(img)
-        d2.ellipse((x-r, y-r, x+r, y+r), fill=(c, c, c))
-    # Vignette
-    vig = Image.new("L", (W, H), 0)
-    vd = ImageDraw.Draw(vig)
-    vd.ellipse((-200, -200, W+200, H+200), fill=255)
-    vig = vig.filter(ImageFilter.GaussianBlur(220))
-    blackbg = Image.new("RGB", (W, H), (0, 0, 0))
-    img = Image.composite(img, blackbg, vig)
-    return img
-
-
-# Write frames to a temp dir using ffmpeg's image2 sequence
-frames_dir = WORK / "frames"
-frames_dir.mkdir(exist_ok=True)
-for i, t in enumerate(np.linspace(0, duration, total_frames)):
-    if i % 30 == 0:
-        print(f"        frame {i}/{total_frames}")
-    make_frame(float(t)).save(frames_dir / f"f_{i:05d}.png", optimize=False)
-
-# Encode frames -> mp4
 silent_bg = WORK / "silent_bg.mp4"
-(
-    ffmpeg.input(str(frames_dir / "f_%05d.png"), framerate=FPS)
-    .output(str(silent_bg), vcodec="libx264", pix_fmt="yuv420p", r=FPS, crf=18, an=None)
-    .overwrite_output().run(quiet=True)
+# Two animated gradient layers + grain, blended for a warm "motivation" feel
+filter_complex = (
+    f"color=c=0x070710:s={W}x{H}:d={total_dur}:r={FPS}[bg];"
+    f"gradients=s={W}x{H}:d={total_dur}:r={FPS}:c0=0xB47800:c1=0x1a0a00:"
+    f"x0=540:y0=900:x1=200:y1=1500:nb_colors=8,format=yuv420p[grad];"
+    f"nullsrc=s={W}x{H}:d={total_dur}:r={FPS},"
+    f"geq=lum='128+50*sin(2*PI*(X/{W}+Y/{H}+T*0.15))':cb=128:cr=128"
+    f"[wave];"
+    f"[bg][grad]blend=all_mode=screen:all_opacity=0.8[mix1];"
+    f"[mix1][wave]blend=all_mode=overlay:all_opacity=0.18,"
+    f"gblur=sigma=2,"
+    f"vignette=PI/4"
+    f"[out]"
+)
+subprocess.run(
+    [
+        "ffmpeg", "-y",
+        "-filter_complex", filter_complex,
+        "-map", "[out]",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-r", str(FPS), "-t", f"{total_dur}",
+        "-preset", "veryfast", "-crf", "20",
+        str(silent_bg),
+    ],
+    check=True, capture_output=True,
 )
 print(f"        wrote {silent_bg}")
 
@@ -175,68 +151,44 @@ write_ass_captions(
 )
 
 
-# ─── 6. Mux audio + render final Short with captions + CTA + fade ───────
+# ─── 6. Mux audio + render final Short (subprocess ffmpeg, clean escaping)─
 print("[5/6] Rendering final Short (captions + subscribe CTA + loop fade)...")
+final = OUT_DIR / "sample_daily_decoded.mp4"
 
-# Combine silent_bg + narration into a single MP4 with audio
-v_in = ffmpeg.input(str(silent_bg))
-a_in = ffmpeg.input(str(WORK / "narration.mp3"))
-
-# Burn captions
-ass_escaped = str(ass_path).replace("\\", "/").replace(":", "\\:")
-v = v_in.video.filter("ass", f"{ass_escaped}:fontsdir=data/fonts")
-
-# Subtle Ken Burns zoom
-v = v.filter(
-    "zoompan",
-    z="min(zoom+0.0008,1.06)",
-    d=1, s=f"{W}x{H}", fps=FPS,
-)
-
-# Subscribe CTA at 65-90% (Tactic 5)
 cta_start = duration * 0.65
 cta_end = duration * 0.92
-v = v.filter(
-    "drawtext",
-    text=" TAP SUBSCRIBE ",
-    fontfile="data/fonts/Montserrat-Black.ttf",
-    fontsize=58, fontcolor="white",
-    box=1, boxcolor="red@0.88", boxborderw=18,
-    x="(w-tw)/2", y="h*0.78",
-    enable=f"between(t,{cta_start:.2f},{cta_end:.2f})",
+fade_start = max(duration - 0.3, 0.1)
+
+# ass filter needs `:` escaped as `\:` in the filter spec
+ass_arg = f"ass={ass_path}:fontsdir=data/fonts"
+filter_chain = (
+    f"{ass_arg},"
+    f"drawtext=fontfile=data/fonts/Montserrat-Black.ttf:"
+    f"text=' TAP SUBSCRIBE ':fontsize=58:fontcolor=white:"
+    f"box=1:boxcolor=red@0.88:boxborderw=18:"
+    f"x=(w-tw)/2:y=h*0.78:"
+    f"enable='between(t\\,{cta_start:.2f}\\,{cta_end:.2f})',"
+    f"drawtext=fontfile=data/fonts/Montserrat-Black.ttf:"
+    f"text='@dailydecoded':fontsize=34:fontcolor=white@0.75:"
+    f"box=1:boxcolor=black@0.35:boxborderw=10:x=w-tw-40:y=60,"
+    f"fade=t=out:st={fade_start:.2f}:d=0.3:c=black:alpha=1"
 )
 
-# Brand watermark top-right
-v = v.filter(
-    "drawtext",
-    text="@dailydecoded",
-    fontfile="data/fonts/Montserrat-Black.ttf",
-    fontsize=34, fontcolor="white@0.75",
-    box=1, boxcolor="black@0.35", boxborderw=10,
-    x="w-tw-40", y="60",
-)
-
-# Loop-perfect fade tail (Tactic 2 visual half)
-v = v.filter(
-    "fade", type="out",
-    start_time=f"{max(duration-0.3,0.1):.2f}",
-    duration=0.3, color="black", alpha=1,
-)
-
-final = OUT_DIR / "sample_daily_decoded.mp4"
-(
-    ffmpeg.output(
-        v, a_in.audio, str(final),
-        vcodec="libx264", acodec="aac",
-        video_bitrate="8M", audio_bitrate="192k",
-        pix_fmt="yuv420p", movflags="+faststart",
-        r=FPS, shortest=None,
-    )
-    .overwrite_output().run(quiet=True)
+subprocess.run(
+    [
+        "ffmpeg", "-y",
+        "-i", str(silent_bg),
+        "-i", str(WORK / "narration.mp3"),
+        "-vf", filter_chain,
+        "-map", "0:v", "-map", "1:a",
+        "-c:v", "libx264", "-c:a", "aac",
+        "-b:v", "8M", "-b:a", "192k",
+        "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+        "-r", str(FPS), "-shortest",
+        str(final),
+    ],
+    check=True, capture_output=True,
 )
 print(f"[6/6] Done. Final: {final}")
 print(f"        Size: {final.stat().st_size/1024/1024:.2f} MB")
 
-# Tidy up frame stills (not needed anymore)
-import shutil
-shutil.rmtree(frames_dir, ignore_errors=True)
