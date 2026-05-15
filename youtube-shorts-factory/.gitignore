@@ -8,11 +8,8 @@ __pycache__/
 .venv/
 venv/
 
-# generated artefacts
-output/shorts/*.mp4
-output/thumbnails/*.jpg
-output/raw/*
-output/workdir/*
+# generated artefacts — entire output tree (videos, thumbnails, scratch)
+output/
 logs/**/*.log
 logs/**/*.json
 
