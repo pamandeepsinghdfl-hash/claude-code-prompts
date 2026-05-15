@@ -25,3 +25,4 @@ data/factory.db-journal
 data/music/*.mp3
 data/music/*.wav
 data/stock_footage/*.mp4
+data/fonts/*.ttf
