@@ -1,6 +1,6 @@
 """Render ONE sample Short end-to-end using the factory's real code.
 
-This script demonstrates the full Daily Decoded pipeline on a public-domain
+This script demonstrates the full Off Mic pipeline on a public-domain
 story so anyone can run it without YouTube/Groq keys. It produces a 9:16
 vertical MP4 with:
 
@@ -169,7 +169,7 @@ filter_chain = (
     f"x=(w-tw)/2:y=h*0.78:"
     f"enable='between(t\\,{cta_start:.2f}\\,{cta_end:.2f})',"
     f"drawtext=fontfile=data/fonts/Montserrat-Black.ttf:"
-    f"text='@dailydecoded':fontsize=34:fontcolor=white@0.75:"
+    f"text='@offmic':fontsize=34:fontcolor=white@0.75:"
     f"box=1:boxcolor=black@0.35:boxborderw=10:x=w-tw-40:y=60,"
     f"fade=t=out:st={fade_start:.2f}:d=0.3:c=black:alpha=1"
 )

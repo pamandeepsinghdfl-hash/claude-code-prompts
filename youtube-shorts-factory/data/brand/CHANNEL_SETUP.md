@@ -1,12 +1,12 @@
-# Daily Decoded — channel setup sheet
+# Off Mic — channel setup sheet
 
 Copy/paste this into YouTube Studio → Customization while setting up the channel.
 
 ## Identity
 
-- **Channel name**: `Daily Decoded`
-- **Handle**: `@dailydecoded`  *(check availability at https://youtube.com/@dailydecoded before claiming)*
-- **Country**: United States  *(or wherever you're optimizing the algorithm cohort for; "Global" channels typically pick US for the largest English-speaking pool)*
+- **Channel name**: `Off Mic`
+- **Handle**: `@offmic`  *(check at https://youtube.com/@offmic before claiming)*
+- **Country**: United States *(or wherever you're optimizing the algorithm cohort for; "Global" channels typically pick US for the largest English-speaking pool)*
 - **Default language**: English
 - **Made for kids**: **No**
 
@@ -20,22 +20,22 @@ Copy/paste this into YouTube Studio → Customization while setting up the chann
 
 ## Description (paste verbatim into "About → Description")
 
-The world's most interesting moments — translated to English so everyone can watch.
+The moments they didn't expect to go viral.
 
-Daily Decoded is a daily Shorts channel that finds the best 60-second moments from podcasts, interviews, news, and viral clips across India, Brazil, Indonesia, the Middle East, Japan, Korea, Latin America, and beyond — and adds bold English captions so the language never gets in the way.
+Off Mic finds the best 60-second moments from podcasts, interviews, and conversations across India, Brazil, Indonesia, the Middle East, Japan, Korea, Latin America, and beyond — and adds bold English captions so the language never gets in the way.
 
-🌍 6 new Shorts every single day
+🎙️ 6 new Shorts every single day
 🕒 04:00 · 08:00 · 12:00 · 16:00 · 20:00 · 00:00 UTC
 ✏️ Always with crystal-clear English captions
-🎙️ Always crediting the original creator
+🎬 Always crediting the original creator
 
-If a moment moves a million people in another language, it can move a million more in English. We're the bridge.
+If a moment moves a million people in another language, it can move a million more in English. We catch what they said when they thought no one was listening.
 
-Subscribe for one daily series — six Shorts that tell one bigger story.
+Subscribe for one daily series — six clips that tell one bigger story.
 
 ## Channel keywords (paste into "Basic info → Keywords", comma-separated)
 
-shorts, viral shorts, english captions, translated podcast, world news shorts, motivation shorts, mind blowing facts, inspiring stories, viral interviews, global content
+shorts, off mic, viral shorts, podcast clips, english captions, translated podcast, viral interviews, mind blowing facts, inspiring stories, global content
 
 ## Default upload settings
 
@@ -43,8 +43,8 @@ YouTube Studio → Settings → Upload defaults:
 
 - **Title**: *(leave empty — the factory generates titles)*
 - **Description**: *(leave empty — the factory injects the full description per Short)*
-- **Tags**: `shorts, viral, motivation, world, podcast`
-- **Visibility**: Private  *(the factory uses publishAt to schedule; visibility flips automatically)*
+- **Tags**: `shorts, off mic, viral, podcast, interview, world`
+- **Visibility**: Private  *(the factory uses publishAt to schedule)*
 - **Category**: People & Blogs
 - **License**: Standard YouTube License
 - **Allow embedding**: Yes
@@ -55,7 +55,7 @@ YouTube Studio → Settings → Upload defaults:
 
 ## Verification
 
-Go to https://youtube.com/verify → phone verification. This unlocks custom thumbnails (the factory generates one per Short — without verification YouTube ignores them).
+Go to https://youtube.com/verify → phone verification. Unlocks custom thumbnails (the factory generates one per Short — without verification YouTube ignores them).
 
 ## Comment moderation (Tactic 4 dependency)
 
@@ -70,20 +70,19 @@ The factory pins a hook question as the first comment (`post_pinned_question` in
 ## Cross-platform handle grabs (do these the same day)
 
 ```
-https://x.com/dailydecoded
-https://instagram.com/dailydecoded
-https://tiktok.com/@dailydecoded
-https://threads.net/@dailydecoded
+https://x.com/offmic
+https://instagram.com/offmic
+https://tiktok.com/@offmic
+https://threads.net/@offmic
 ```
 
 Lock all four immediately even if you don't post yet. Squatters watch new YouTube channels for unclaimed handles.
 
-## Channel art credit (optional metadata)
+## Optional channel credit
 
-In channel description (bottom), add:
 ```
-Branding: Daily Decoded design team
-Engine: Daily Decoded production pipeline
+Off Mic — viral podcast moments, in English.
+Run by the Off Mic production team.
 ```
 
-Don't mention "automation" or "AI-generated" in the public description — YouTube doesn't penalize it, but human viewers do.
+Don't mention "automation" or "AI-generated" in the public description.

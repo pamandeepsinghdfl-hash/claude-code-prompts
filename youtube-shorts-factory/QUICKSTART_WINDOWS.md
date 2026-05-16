@@ -1,4 +1,4 @@
-# Daily Decoded Factory — Windows quick-start
+# Off Mic Factory — Windows quick-start
 
 Everything you need to go from "downloaded the zip" to "Shorts auto-uploading
 to YouTube," in order.
@@ -46,9 +46,9 @@ The script will:
 
 ### Key 1 — YouTube Data API v3 (sourcing trending videos)
 
-1. Sign into Google as `dailydecoded@gmail.com` (your new brand account)
+1. Sign into Google as `offmic@gmail.com` (your new brand account)
 2. Go to https://console.cloud.google.com/
-3. Top bar → "Select a project" → **New project** → name it `daily-decoded` → Create
+3. Top bar → "Select a project" → **New project** → name it `off-mic` → Create
 4. Wait for the project to be selected (top bar)
 5. https://console.cloud.google.com/apis/library/youtube.googleapis.com → **Enable**
 6. Left menu → **APIs & Services** → **Credentials**
@@ -62,13 +62,13 @@ Still in https://console.cloud.google.com/apis/credentials:
 1. **+ Create credentials** → **OAuth client ID**
 2. If asked, configure consent screen first:
    - **User Type**: External → Create
-   - **App name**: Daily Decoded Factory
-   - **Support / developer email**: your `dailydecoded@gmail.com`
+   - **App name**: Off Mic Factory
+   - **Support / developer email**: your `offmic@gmail.com`
    - Save & continue → leave scopes default → Save & continue
-   - **Test users** → **+ Add Users** → `dailydecoded@gmail.com` → Save & continue
+   - **Test users** → **+ Add Users** → `offmic@gmail.com` → Save & continue
 3. Back to Create credentials → **OAuth client ID**:
    - **Application type**: **Desktop app** (NOT Web app)
-   - Name: `daily-decoded-desktop`
+   - Name: `off-mic-desktop`
    - Create → **Download JSON**
 4. Rename the downloaded file to `client_secret.json`
 5. Move it into `youtube-shorts-factory\credentials\client_secret.json`
@@ -138,11 +138,11 @@ python main.py
 
 The **first time** it tries to upload, it opens your browser:
 
-1. Sign in with `dailydecoded@gmail.com`
+1. Sign in with `offmic@gmail.com`
 2. The "Choose an account" screen shows your personal channel AND
-   the Daily Decoded brand channel — **pick Daily Decoded**
+   the Off Mic brand channel — **pick Off Mic**
 3. You'll see "Google hasn't verified this app" warning → click
-   **Advanced** → **Go to Daily Decoded Factory (unsafe)** → Continue
+   **Advanced** → **Go to Off Mic Factory (unsafe)** → Continue
 4. Approve scopes
 5. Browser shows "The authentication flow has completed"
 
@@ -165,8 +165,8 @@ Windows service so it survives reboots, install NSSM:
 
 ```powershell
 winget install NSSM.NSSM
-nssm install DailyDecoded "C:\Users\$env:USERNAME\code\youtube-shorts-factory\.venv\Scripts\python.exe" "C:\Users\$env:USERNAME\code\youtube-shorts-factory\scheduler.py"
-nssm start DailyDecoded
+nssm install OffMic "C:\Users\$env:USERNAME\code\youtube-shorts-factory\.venv\Scripts\python.exe" "C:\Users\$env:USERNAME\code\youtube-shorts-factory\scheduler.py"
+nssm start OffMic
 ```
 
 ## Troubleshooting
@@ -174,7 +174,7 @@ nssm start DailyDecoded
 | Symptom | Fix |
 |---|---|
 | `redirect_uri_mismatch` | OAuth client is Web app, must be Desktop app. Re-create. |
-| `Access blocked: this app's request is invalid` | Add `dailydecoded@gmail.com` as a test user in OAuth consent screen. |
+| `Access blocked: this app's request is invalid` | Add `offmic@gmail.com` as a test user in OAuth consent screen. |
 | `quotaExceeded` | YouTube API quota hit. Drop to 4 Shorts/day in `config.yaml`. |
 | `forbidden: youtubeSignupRequired` | The Google account you authorized has no YouTube channel yet. |
 | `failedPrecondition` on thumbnail | Channel not verified at youtube.com/verify. |

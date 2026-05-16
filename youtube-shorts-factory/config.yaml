@@ -128,7 +128,7 @@ video:
   music_volume: 0.10            # original audio stays at 1.0
   music_dir: "data/music"
   # Watermark / channel handle (small, top-right, semi-transparent)
-  watermark_text: "@dailydecoded"
+  watermark_text: "@offmic"
 
 # ─── Thumbnail ────────────────────────────────────────────────────────────
 thumbnail:
@@ -147,23 +147,23 @@ metadata:
   description_template: |
     {summary}
 
-    🌍 Daily Decoded — the world's viral moments, translated to English.
+    🎙️ Off Mic — viral podcast moments, translated to English.
     📺 6 new Shorts every day · 04:00 / 08:00 / 12:00 / 16:00 / 20:00 / 00:00 UTC
-    👉 Subscribe → https://youtube.com/@dailydecoded
+    👉 Subscribe → https://youtube.com/@offmic
 
     🎬 Original video: {source_url}
     🕒 Clip from {clip_start}–{clip_end} of original
     🎙️ Credit: {creator_name} ({country} · original language: {language})
 
     All clips used under fair-use commentary with full English captions and
-    creator attribution. Bridging cultures, one Short at a time.
+    creator attribution. The moments they didn't expect to go viral.
 
     {hashtags}
   default_hashtags:
     - "#Shorts"
-    - "#DailyDecoded"
+    - "#OffMic"
     - "#Viral"
-    - "#GlobalShorts"
+    - "#PodcastClips"
     - "#EnglishCaptions"
     - "#TranslatedShorts"
 
