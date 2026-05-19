@@ -128,7 +128,7 @@ video:
   music_volume: 0.10            # original audio stays at 1.0
   music_dir: "data/music"
   # Watermark / channel handle (small, top-right, semi-transparent)
-  watermark_text: "@offmic"
+  watermark_text: "@pixelhours"
 
 # ─── Thumbnail ────────────────────────────────────────────────────────────
 thumbnail:
@@ -147,25 +147,20 @@ metadata:
   description_template: |
     {summary}
 
-    🎙️ Off Mic — viral podcast moments, translated to English.
+    🌙 Pixel Hours — cozy pixel-art loops, daily.
     📺 6 new Shorts every day · 04:00 / 08:00 / 12:00 / 16:00 / 20:00 / 00:00 UTC
-    👉 Subscribe → https://youtube.com/@offmic
+    👉 Subscribe → https://youtube.com/@pixelhours
 
-    🎬 Original video: {source_url}
-    🕒 Clip from {clip_start}–{clip_end} of original
-    🎙️ Credit: {creator_name} ({country} · original language: {language})
-
-    All clips used under fair-use commentary with full English captions and
-    creator attribution. The moments they didn't expect to go viral.
+    All scenes are original pixel-art compositions with CC0 lofi music.
 
     {hashtags}
   default_hashtags:
     - "#Shorts"
-    - "#OffMic"
-    - "#Viral"
-    - "#PodcastClips"
-    - "#EnglishCaptions"
-    - "#TranslatedShorts"
+    - "#PixelHours"
+    - "#PixelArt"
+    - "#Lofi"
+    - "#Cozy"
+    - "#Aesthetic"
 
 # ─── Fallback (when no copyright-safe source is found) ────────────────────
 fallback:

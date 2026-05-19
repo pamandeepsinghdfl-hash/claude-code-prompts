@@ -1,4 +1,4 @@
-# Off Mic Factory — One-click Windows setup
+# Pixel Hours Factory — One-click Windows setup
 #
 # Run this from PowerShell INSIDE the extracted project folder:
 #   .\setup_windows.ps1
@@ -29,7 +29,7 @@ function Write-Fail($msg) { Write-Host "  XX  $msg" -ForegroundColor Red }
 
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Magenta
-Write-Host "   Off Mic Factory - Windows Setup" -ForegroundColor Magenta
+Write-Host "   Pixel Hours Factory - Windows Setup" -ForegroundColor Magenta
 Write-Host "========================================================" -ForegroundColor Magenta
 
 # ─── 1. Check Python ─────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ Write-Host ""
 Write-Host "  5. Check the output:"
 Write-Host "       explorer output\shorts"
 Write-Host ""
-Write-Host "  6. Real run (uploads + schedules to Off Mic):"
+Write-Host "  6. Real run (uploads + schedules to Pixel Hours):"
 Write-Host "       python main.py"
 Write-Host ""
 Write-Host "  When stuck, paste any error in chat and Claude will help." -ForegroundColor Yellow

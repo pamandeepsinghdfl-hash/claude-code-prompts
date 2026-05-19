@@ -1,41 +1,39 @@
-# Off Mic — channel setup sheet
+# Pixel Hours — channel setup sheet
 
 Copy/paste this into YouTube Studio → Customization while setting up the channel.
 
 ## Identity
 
-- **Channel name**: `Off Mic`
-- **Handle**: `@offmic`  *(check at https://youtube.com/@offmic before claiming)*
-- **Country**: United States *(or wherever you're optimizing the algorithm cohort for; "Global" channels typically pick US for the largest English-speaking pool)*
+- **Channel name**: `Pixel Hours`
+- **Handle**: `@pixelhours`  *(check at https://youtube.com/@pixelhours before claiming)*
+- **Country**: United States *(or wherever your largest cozy-Shorts audience lives)*
 - **Default language**: English
 - **Made for kids**: **No**
 
 ## Profile picture
 
-`data/brand/logo.png` → upload as channel profile picture (YouTube auto-crops to circle; the design is circle-safe).
+`data/brand/logo.png` (1500×1500) → upload as channel profile picture (auto-cropped to circle; design is circle-safe).
 
 ## Banner
 
-`data/brand/banner.png` (2560×1440) → upload as channel banner. Safe-zone text is centered so it'll render correctly on TV, desktop, and mobile.
+`data/brand/banner.png` (2560×1440) → upload as channel banner. Safe-zone text is centered.
 
 ## Description (paste verbatim into "About → Description")
 
-The moments they didn't expect to go viral.
+cozy pixel-art loops · every 4 hours
 
-Off Mic finds the best 60-second moments from podcasts, interviews, and conversations across India, Brazil, Indonesia, the Middle East, Japan, Korea, Latin America, and beyond — and adds bold English captions so the language never gets in the way.
+Pixel Hours makes 15-second cozy pixel-art loops — rainy bedrooms, quiet kitchens, late-night cafes, snowy windows. New scene every 4 hours.
 
-🎙️ 6 new Shorts every single day
+🌙 6 new Shorts every single day
 🕒 04:00 · 08:00 · 12:00 · 16:00 · 20:00 · 00:00 UTC
-✏️ Always with crystal-clear English captions
-🎬 Always crediting the original creator
+🎵 CC0 lofi soundtrack
+🎨 Original pixel-art compositions
 
-If a moment moves a million people in another language, it can move a million more in English. We catch what they said when they thought no one was listening.
-
-Subscribe for one daily series — six clips that tell one bigger story.
+Hit subscribe and live a quieter hour with us.
 
 ## Channel keywords (paste into "Basic info → Keywords", comma-separated)
 
-shorts, off mic, viral shorts, podcast clips, english captions, translated podcast, viral interviews, mind blowing facts, inspiring stories, global content
+pixel art, pixel hours, lofi, cozy, aesthetic, 16 bit, snes, pixelart, rainy, late night, vaporwave, lo-fi, shorts, cozy loops
 
 ## Default upload settings
 
@@ -43,9 +41,9 @@ YouTube Studio → Settings → Upload defaults:
 
 - **Title**: *(leave empty — the factory generates titles)*
 - **Description**: *(leave empty — the factory injects the full description per Short)*
-- **Tags**: `shorts, off mic, viral, podcast, interview, world`
+- **Tags**: `pixel art, pixel hours, lofi, cozy, aesthetic, shorts`
 - **Visibility**: Private  *(the factory uses publishAt to schedule)*
-- **Category**: People & Blogs
+- **Category**: Entertainment
 - **License**: Standard YouTube License
 - **Allow embedding**: Yes
 - **Publish to subscriptions feed and notify subscribers**: Yes
@@ -55,34 +53,31 @@ YouTube Studio → Settings → Upload defaults:
 
 ## Verification
 
-Go to https://youtube.com/verify → phone verification. Unlocks custom thumbnails (the factory generates one per Short — without verification YouTube ignores them).
-
-## Comment moderation (Tactic 4 dependency)
-
-YouTube Studio → Settings → Community → Defaults:
-
-- **Hold for review**: "Potentially inappropriate comments"
-- **Blocked words**: add any niche-specific spam terms
-- **Approved users**: leave default
-
-The factory pins a hook question as the first comment (`post_pinned_question` in `youtube_uploader.py`). Make sure the channel allows comments — Studio → Settings → Channel → Advanced → Comments: **Allow all comments**.
+Go to https://youtube.com/verify → phone verification. Unlocks custom thumbnails + longer uploads.
 
 ## Cross-platform handle grabs (do these the same day)
 
 ```
-https://x.com/offmic
-https://instagram.com/offmic
-https://tiktok.com/@offmic
-https://threads.net/@offmic
+https://x.com/pixelhours
+https://instagram.com/pixelhours
+https://tiktok.com/@pixelhours
+https://threads.net/@pixelhours
 ```
 
-Lock all four immediately even if you don't post yet. Squatters watch new YouTube channels for unclaimed handles.
+Cozy pixel-art accounts are exploding right now — squatters watch new YouTube channels for unclaimed handles. Lock all four immediately even if you don't post yet.
 
-## Optional channel credit
+## Music sourcing
 
-```
-Off Mic — viral podcast moments, in English.
-Run by the Off Mic production team.
-```
+Drop CC0 lofi MP3s into `data/music/`. The factory picks one per Short based on mood. Recommended sources:
 
-Don't mention "automation" or "AI-generated" in the public description.
+- **Pixabay Music** (https://pixabay.com/music/) — filter by "Lofi" and "Free for commercial use"
+- **Free Music Archive** (https://freemusicarchive.org/) — Creative Commons Zero (CC0) only
+- **Uppbeat** — free plan covers lofi (attribution required, add to description)
+
+Filename hint: prefix the mood for better matching:
+- `rainy_chillhop_01.mp3`
+- `warm_jazz_loop_02.mp3`
+- `dreamy_pad_03.mp3`
+- `snowy_piano_04.mp3`
+
+The factory matches filename prefix to scene mood; without a prefix, picks randomly.

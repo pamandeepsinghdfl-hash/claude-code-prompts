@@ -137,7 +137,7 @@ filters = [
     "box=1:boxcolor=0xCC0033@0.92:boxborderw=12:x=40:y=130",
     # Brand watermark — top-right
     "drawtext=fontfile=data/fonts/Montserrat-Black.ttf:"
-    "text='@offmic':fontsize=34:fontcolor=white@0.8:"
+    "text='@pixelhours':fontsize=34:fontcolor=white@0.8:"
     "box=1:boxcolor=black@0.45:boxborderw=10:x=w-tw-40:y=130",
     # Subscribe CTA
     f"drawtext=fontfile=data/fonts/Montserrat-Black.ttf:"

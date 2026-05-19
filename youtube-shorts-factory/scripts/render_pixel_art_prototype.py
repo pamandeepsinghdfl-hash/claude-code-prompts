@@ -277,7 +277,7 @@ if not Path(font_path).exists():
 
 # Filter chain:
 #   - Caption text: bottom-center, soft white, no harsh box (pixosly aesthetic)
-#   - @offmic watermark removed — using pix factory brand placeholder
+#   - @pixelhours watermark removed — using pix factory brand placeholder
 #   - Loop fade tail
 filters = [
     # The caption — lowercase, intimate, no all-caps

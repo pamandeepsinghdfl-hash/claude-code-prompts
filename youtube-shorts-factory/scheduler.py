@@ -1,7 +1,8 @@
 """APScheduler daemon: runs the factory at 00:00 UTC every day.
 
-  python scheduler.py            # daemonise
+  python scheduler.py            # daemonise (pixel-art factory by default)
   python scheduler.py --once     # run immediately, exit (handy for CI / cron)
+  python scheduler.py --legacy   # use the original podcast-clip pipeline
 
 The scheduler relies on the OS being on UTC time. The Dockerfile sets
 TZ=UTC; for VPS deployments set `timedatectl set-timezone UTC`.
@@ -18,14 +19,17 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from src.config import load_config
-from src.factory import run_daily
 from src.utils.logger import setup_logger
 
 
-def _run() -> None:
+def _run(legacy: bool = False) -> None:
     log = logging.getLogger("shorts_factory.scheduler")
     log.info("Cron trigger fired at %s — kicking daily run.", datetime.now(timezone.utc))
     try:
+        if legacy:
+            from src.factory import run_daily
+        else:
+            from src.pixel_art.factory_pixel import run_daily
         run_daily()
     except Exception:  # noqa: BLE001
         log.exception("Daily run crashed")
@@ -34,6 +38,8 @@ def _run() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true", help="Run immediately and exit")
+    parser.add_argument("--legacy", action="store_true",
+                        help="Use the original podcast-clip pipeline")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -41,13 +47,13 @@ def main() -> int:
     log = logging.getLogger("shorts_factory.scheduler")
 
     if args.once:
-        _run()
+        _run(legacy=args.legacy)
         return 0
 
     hh, mm = (int(x) for x in cfg.schedule.run_at_utc.split(":"))
     sched = BlockingScheduler(timezone="UTC")
     sched.add_job(
-        _run,
+        lambda: _run(legacy=args.legacy),
         CronTrigger(hour=hh, minute=mm),
         id="daily_shorts_factory",
         coalesce=True,
@@ -55,7 +61,8 @@ def main() -> int:
         misfire_grace_time=3600,
     )
     log.info(
-        "Scheduler started. Daily run at %s UTC. Next: %s",
+        "Scheduler started (%s pipeline). Daily run at %s UTC. Next: %s",
+        "legacy podcast" if args.legacy else "pixel-art",
         cfg.schedule.run_at_utc,
         sched.get_jobs()[0].next_run_time,
     )
