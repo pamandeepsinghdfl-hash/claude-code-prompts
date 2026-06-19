@@ -1,0 +1,20 @@
+# Secrets & personal data — never commit these
+config.yaml
+auth_state.json
+*.resume.pdf
+resumes/
+profile.private.yaml
+
+# Runtime artifacts
+applications.db
+applications.csv
+logs/
+screenshots/
+user_data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env

@@ -1,0 +1,131 @@
+# =============================================================================
+# Auto Indeed Applier — configuration
+# Copy this file to `config.yaml` and edit. `config.yaml` is gitignored.
+# =============================================================================
+
+# --- Where to search -------------------------------------------------------
+search:
+  # One run is performed per query. Each is a separate Indeed search.
+  queries:
+    - "software engineer"
+    - "backend developer"
+  location: "Remote"          # e.g. "Remote", "New York, NY", "London"
+  country: "www"              # Indeed domain prefix: www (US), uk, ca, de, in ...
+  radius_miles: 25
+  date_posted_days: 7         # only jobs posted within N days (1, 3, 7, 14)
+  salary_min: null            # e.g. 100000, or null to ignore
+  easy_apply_only: true       # only "Indeed Apply" jobs can be auto-filled
+  remote_only: false
+
+# --- Filtering: skip jobs you don't want -----------------------------------
+filters:
+  # Skip a job if its title contains ANY of these (case-insensitive).
+  title_blocklist:
+    - "senior staff"
+    - "principal"
+    - "manager"
+    - "clearance"
+  # Skip a job if its title contains NONE of these (leave empty to disable).
+  title_allowlist: []
+  # Skip jobs from these companies.
+  company_blocklist:
+    - "Acme Staffing"
+
+# --- Run limits & pacing ---------------------------------------------------
+limits:
+  max_applications_per_run: 15
+  max_jobs_to_scan_per_query: 50
+  # Random human-like delay between actions (seconds).
+  min_action_delay: 1.5
+  max_action_delay: 4.0
+  # Longer pause between full applications (seconds).
+  min_between_applications: 8
+  max_between_applications: 20
+
+# --- Submission behavior ---------------------------------------------------
+behavior:
+  # true  = click the final Submit button automatically (you chose this).
+  # false = fill everything, then STOP at the review step for you to submit.
+  #         Strongly recommended for your first few runs ("dry run").
+  auto_submit: true
+  # If a required screening question has no confident answer, what to do:
+  #   "skip"  = abandon this application, move to next job (safest)
+  #   "guess" = use the profile defaults / first option and continue
+  on_unanswered_required: "skip"
+  # Take a screenshot of every application before submit (saved to screenshots/).
+  screenshot_each: true
+  headless: false             # false = watch it work; true = run in background
+
+# --- Your profile: used to auto-fill forms ---------------------------------
+profile:
+  first_name: "Jane"
+  last_name: "Doe"
+  full_name: "Jane Doe"
+  email: "jane.doe@example.com"
+  phone: "+1 555 123 4567"
+  city: "Austin"
+  state: "TX"
+  country: "United States"
+  postal_code: "78701"
+  linkedin: "https://www.linkedin.com/in/janedoe"
+  website: "https://janedoe.dev"
+  # Path to your resume PDF (relative to this folder or absolute).
+  resume_path: "resumes/jane_doe_resume.pdf"
+  # A short default cover-letter / "why are you a good fit" blurb.
+  cover_letter: |
+    I'm a software engineer with experience building reliable backend
+    services. I'm excited about this role and would welcome the chance
+    to contribute. Thank you for your consideration.
+
+# --- Screening question answers --------------------------------------------
+# Indeed asks a lot of yes/no and numeric screening questions. The tool
+# matches the question text against the keywords below (first match wins).
+# Add as many as you like. `answer` is what gets typed or which option is
+# selected (for radio/select, it picks the option whose text contains `answer`).
+screening_answers:
+  defaults:
+    years_experience: "5"
+    authorized_to_work: "Yes"
+    require_sponsorship: "No"
+    willing_to_relocate: "No"
+    desired_salary: "120000"
+    notice_period: "2 weeks"
+    education_level: "Bachelor's"
+
+  # Keyword -> answer rules. `match` is matched case-insensitively as a
+  # substring of the question. Order matters; put specific rules first.
+  rules:
+    - match: "authorized to work"
+      answer: "Yes"
+    - match: "legally authorized"
+      answer: "Yes"
+    - match: "require sponsorship"
+      answer: "No"
+    - match: "require visa"
+      answer: "No"
+    - match: "willing to relocate"
+      answer: "No"
+    - match: "willing to undergo"      # drug test / background check
+      answer: "Yes"
+    - match: "background check"
+      answer: "Yes"
+    - match: "years of experience"
+      answer: "5"
+    - match: "years' experience"
+      answer: "5"
+    - match: "how many years"
+      answer: "5"
+    - match: "expected salary"
+      answer: "120000"
+    - match: "desired salary"
+      answer: "120000"
+    - match: "salary expectation"
+      answer: "120000"
+    - match: "notice period"
+      answer: "2 weeks"
+    - match: "when can you start"
+      answer: "2 weeks"
+    - match: "highest level of education"
+      answer: "Bachelor's"
+    - match: "do you have a"            # generic "do you have a X" -> Yes
+      answer: "Yes"
