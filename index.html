@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Hangout" />
-<title>Hangout — who's around</title>
+<title>Hangout — who's around Calgary</title>
 <style>
   :root{
     --bg:#0a0c12; --panel:#111319; --panel2:#151822; --border:rgba(255,255,255,0.1);
@@ -223,20 +223,23 @@ const FIREBASE_CONFIG = {
   ];
   const AVATARS = ["😎","🔥","🌙","✨","🎧","🦋","🐼","🌵","🍯","🛸","🎯","🍀"];
   const POIS = [
-    { name: "Riverside Bend", x: 13, y: 58 },
-    { name: "The Grid District", x: 74, y: 20 },
-    { name: "Elm Hollow Park", x: 37, y: 40 },
-    { name: "Old Mill Quarter", x: 82, y: 74 },
-    { name: "Northgate Common", x: 55, y: 10 },
-    { name: "Lowtown Strip", x: 20, y: 88 },
+    { name: "Downtown / Beltline", x: 50, y: 46 },
+    { name: "Kensington", x: 26, y: 24 },
+    { name: "Inglewood", x: 70, y: 58 },
+    { name: "Bridgeland", x: 58, y: 30 },
+    { name: "Marda Loop", x: 30, y: 68 },
+    { name: "Airdrie", x: 55, y: 8 },
+    { name: "Cochrane", x: 10, y: 16 },
+    { name: "Okotoks", x: 38, y: 92 },
+    { name: "Chestermere", x: 90, y: 40 },
   ];
   const SAMPLE_PEOPLE = [
-    { name: "Simran",   avatar: "😎", intentId: "netflix", note: "new season just dropped", x: 24, y: 32 },
-    { name: "Jaskaran", avatar: "🔥", intentId: "food",    note: "made too much butter chicken", x: 66, y: 45 },
-    { name: "Avneet",   avatar: "🌙", intentId: "talk",    note: "need to vent, got 20 min?", x: 45, y: 66 },
-    { name: "Rohan",    avatar: "🎧", intentId: "chill",   note: "rooftop, bring a hoodie", x: 78, y: 55 },
-    { name: "Nimrat",   avatar: "✨", intentId: "meet",    note: "downtown, coffee run", x: 30, y: 78 },
-    { name: "Deep",     avatar: "🛸", intentId: "drink",   note: "one drink turned into a whole night", x: 58, y: 30 },
+    { name: "Simran",   avatar: "😎", intentId: "netflix", note: "new season just dropped", x: 27, y: 26 },
+    { name: "Jaskaran", avatar: "🔥", intentId: "food",    note: "made too much butter chicken", x: 68, y: 55 },
+    { name: "Avneet",   avatar: "🌙", intentId: "talk",    note: "need to vent, got 20 min?", x: 48, y: 48 },
+    { name: "Rohan",    avatar: "🎧", intentId: "chill",   note: "rooftop, bring a hoodie", x: 60, y: 32 },
+    { name: "Nimrat",   avatar: "✨", intentId: "meet",    note: "downtown, coffee run", x: 32, y: 66 },
+    { name: "Deep",     avatar: "🛸", intentId: "drink",   note: "one drink turned into a whole night", x: 56, y: 10 },
   ];
 
   function intentOf(id) { return INTENTS.find((i) => i.id === id) || INTENTS[3]; }
@@ -423,9 +426,9 @@ const FIREBASE_CONFIG = {
       <div class="onboard-wrap">
         <div class="glow a"></div><div class="glow b"></div>
         <div class="card">
-          <div class="brand">📡 HANGOUT</div>
+          <div class="brand">📡 HANGOUT · YYC</div>
           <h1>Get on the board</h1>
-          <p class="sub">Drop a pin. Say what you're up for. See who's around.</p>
+          <p class="sub">Calgary &amp; surrounding area. Drop a pin. Say what you're up for. See who's around.</p>
           <label class="field-label">What should people call you</label>
           <input id="nameInput" class="text-input" maxlength="18" placeholder="Your name" value="${esc(S.nameDraft)}" />
           <div style="height:16px"></div>
@@ -437,9 +440,9 @@ const FIREBASE_CONFIG = {
     <div class="onboard-wrap">
       <div class="glow a"></div><div class="glow b"></div>
       <div class="card">
-        <div class="brand">📡 HANGOUT</div>
+        <div class="brand">📡 HANGOUT · YYC</div>
         <h1>Get on the board</h1>
-        <p class="sub">Drop a pin. Say what you're up for. See who's around.</p>
+        <p class="sub">Calgary &amp; surrounding area. Drop a pin. Say what you're up for. See who's around.</p>
         <label class="field-label">Pick a face</label>
         <div class="avatar-grid">
           ${AVATARS.map((a) => `<button class="avatar-opt ${a === S.avatarDraft ? "sel" : ""}" data-avatar="${a}">${a}</button>`).join("")}
@@ -532,7 +535,7 @@ const FIREBASE_CONFIG = {
       </div>
 
       <div class="top-bar">
-        <div class="chip">📡 <span style="letter-spacing:0.2em;font-weight:600">HANGOUT</span></div>
+        <div class="chip">📡 <span style="letter-spacing:0.2em;font-weight:600">HANGOUT · YYC</span></div>
         <div class="chip"><span class="dot-online"></span> ${total} on the board</div>
       </div>
       <div class="live-chip chip">✨ ${liveIntentIds.size}/${INTENTS.length} vibes live now</div>
