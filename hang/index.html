@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#07080C" />
+<title>Hang — concept demo</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  :root{
+    --bg:#07080C; --panel:rgba(22,24,34,0.72); --panel-strong:rgba(22,24,34,0.92);
+    --line:rgba(255,255,255,0.12); --text:#F2F4FA; --muted:#9AA3B8; --faint:#5C6479;
+    --accent:#7FD8E6; --accent2:#A99CF5; --warn:#F0C57C; --danger:#E86A6A;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
+  #map{position:absolute;inset:0;z-index:0;background:#0b0d14}
+  .leaflet-tile-pane{filter:saturate(0.85) brightness(0.9)}
+  .leaflet-control-attribution{background:rgba(0,0,0,0.4)!important;color:var(--faint)!important;font-size:9px!important}
+  .leaflet-control-attribution a{color:var(--muted)!important}
+  .leaflet-control-zoom{display:none}
+
+  .glass{background:var(--panel);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)}
+
+  /* ---------- top bar ---------- */
+  #topbar{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:14px;right:14px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
+  #logo{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px}
+  #logo b{font-size:15px;font-weight:800;letter-spacing:0.04em;background:linear-gradient(135deg,#9BE7F2,#C9BFFB);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #logo .dot{width:7px;height:7px;border-radius:50%;background:#7FE0A8;box-shadow:0 0 8px #7FE0A8;animation:pulse-dot 1.6s ease-in-out infinite}
+  @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
+
+  #nearby-strip{pointer-events:auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+  #nearby-count{font-size:10.5px;letter-spacing:0.08em;color:var(--muted);padding:5px 11px;border-radius:999px}
+  #nearby-avatars{display:flex;gap:7px;padding:7px;border-radius:20px;max-width:46vw;overflow-x:auto;scrollbar-width:none}
+  #nearby-avatars::-webkit-scrollbar{display:none}
+  .mini-avatar{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);transition:transform .15s ease,border-color .2s ease}
+  .mini-avatar:active{transform:scale(0.9)}
+  .mini-avatar.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,216,230,0.3)}
+  .mini-avatar .ring{position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--accent);opacity:0;animation:none}
+  .mini-avatar.live .ring{opacity:0.8;animation:ring-pulse 1.8s ease-out infinite}
+  @keyframes ring-pulse{0%{transform:scale(0.85);opacity:0.8}100%{transform:scale(1.35);opacity:0}}
+
+  /* ---------- radius control ---------- */
+  #radius-wrap{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 68px);transform:translateX(-50%);z-index:29;pointer-events:none}
+  #radius-control{pointer-events:auto;display:flex;gap:3px;padding:4px;border-radius:999px}
+  #radius-control button{all:unset;cursor:pointer;padding:7px 13px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted);transition:background .18s ease,color .18s ease}
+  #radius-control button.active{background:rgba(255,255,255,0.14);color:var(--text)}
+
+  /* ---------- category filter ---------- */
+  #filters{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:29;display:flex;justify-content:center;pointer-events:none}
+  #filter-row{pointer-events:auto;display:flex;gap:7px;padding:9px 11px;border-radius:999px;overflow-x:auto;max-width:92vw;scrollbar-width:none}
+  #filter-row::-webkit-scrollbar{display:none}
+  .chip{all:unset;flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;transition:all .18s ease;white-space:nowrap}
+  .chip.active{background:rgba(255,255,255,0.14);color:var(--text);border-color:rgba(255,255,255,0.22)}
+  .chip .ic{font-size:14px}
+
+  /* ---------- bottom nav / self ---------- */
+  #self-bar{position:fixed;left:0;right:0;bottom:0;z-index:28;display:flex;justify-content:center;padding:0 14px calc(env(safe-area-inset-bottom) + 14px)}
+  #self-pill{display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:999px;width:100%;max-width:420px;justify-content:space-between}
+  #self-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7FD8E6,#A99CF5);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  #self-meta{flex:1;min-width:0}
+  #self-meta .name{font-size:13px;font-weight:700}
+  #self-meta .status{font-size:10.5px;color:var(--muted)}
+  #self-activity-btn{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6);padding:8px 14px;border-radius:999px;white-space:nowrap}
+
+  /* ---------- status picker ---------- */
+  #status-sheet{position:fixed;inset:0;z-index:60;background:rgba(5,6,10,0.72);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease}
+  #status-sheet.open{opacity:1;pointer-events:auto}
+  #status-card{width:100%;max-width:460px;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
+  #status-sheet.open #status-card{transform:translateY(0)}
+  .sheet-title{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);margin:0 4px 14px}
+  #status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+  .status-opt{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,0.04);transition:all .15s ease}
+  .status-opt .ic{font-size:24px}
+  .status-opt span{font-size:11px;color:var(--muted);text-align:center}
+  .status-opt.active{border-color:var(--accent);background:rgba(127,216,230,0.12)}
+  .status-opt.active span{color:var(--text)}
+  #status-close{all:unset;display:block;width:100%;text-align:center;padding:13px 0;border-radius:14px;color:var(--muted);font-size:13px;border:1px solid var(--line)}
+
+  /* ---------- profile sheet ---------- */
+  #profile-sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.9,.3,1.1)}
+  #profile-sheet.open{transform:translateY(0)}
+  #profile-card{max-width:460px;margin:0 auto;border-radius:26px 26px 0 0;padding:20px 20px calc(env(safe-area-inset-bottom) + 20px)}
+  #profile-close{all:unset;position:absolute;top:14px;right:16px;color:var(--faint);font-size:20px;cursor:pointer;line-height:1}
+  #profile-head{display:flex;align-items:center;gap:13px;margin-bottom:4px}
+  #profile-avatar{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+  #profile-name{font-size:18px;font-weight:700}
+  #profile-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  #profile-dist{display:inline-block;margin-top:9px;font-size:11px;color:var(--accent);background:rgba(127,216,230,0.12);border:1px solid rgba(127,216,230,0.3);padding:4px 10px;border-radius:999px}
+
+  #ptt-zone{margin-top:22px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  #ptt-label{font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint)}
+  #ptt-btn{all:unset;position:relative;width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle at 35% 30%,#2a3a44,#141a20);border:1px solid rgba(255,255,255,0.14);box-shadow:inset 0 2px 6px rgba(255,255,255,0.08), inset 0 -4px 10px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.5);transition:transform .1s ease}
+  #ptt-btn:active{transform:scale(0.96)}
+  #ptt-btn.live{background:radial-gradient(circle at 35% 30%,#4a1f1f,#200d0d);box-shadow:inset 0 2px 6px rgba(255,255,255,0.1), inset 0 -4px 10px rgba(0,0,0,0.5), 0 0 0 0 rgba(232,106,106,0.5);animation:live-ring 1s ease-out infinite}
+  @keyframes live-ring{0%{box-shadow:inset 0 2px 6px rgba(255,255,255,0.1), inset 0 -4px 10px rgba(0,0,0,0.5), 0 0 0 0 rgba(232,106,106,0.55)}100%{box-shadow:inset 0 2px 6px rgba(255,255,255,0.1), inset 0 -4px 10px rgba(0,0,0,0.5), 0 0 0 18px rgba(232,106,106,0)}}
+  #ptt-icon{font-size:34px}
+  #ptt-status{font-size:12.5px;color:var(--muted);min-height:16px;text-align:center}
+  #ptt-wave{display:flex;align-items:center;gap:3px;height:20px}
+  #ptt-wave span{width:3px;border-radius:2px;background:var(--danger);height:4px;transition:height .08s ease}
+  #ptt-note{font-size:10.5px;color:var(--faint);text-align:center;line-height:1.5;margin-top:4px;max-width:280px}
+
+  /* ---------- map markers ---------- */
+  .hang-marker{position:relative;width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .hang-marker .hit{position:absolute;inset:-8px;pointer-events:auto;cursor:pointer}
+  .hang-marker .radar{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--mcolor,#7FD8E6);opacity:0;animation:radar 2.6s ease-out infinite}
+  @keyframes radar{0%{transform:scale(0.5);opacity:0.55}100%{transform:scale(1.9);opacity:0}}
+  .hang-marker .avatar3d{width:36px;height:36px;border-radius:50%;background:var(--mgrad,linear-gradient(135deg,#7FD8E6,#5B5BE6));display:flex;align-items:center;justify-content:center;font-size:17px;border:2px solid rgba(255,255,255,0.35);box-shadow:0 6px 14px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35);transform-style:preserve-3d;animation:hop 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
+  @keyframes hop{0%,100%{transform:translateY(0) rotateX(0deg) scale(1)}25%{transform:translateY(-9px) rotateX(10deg) scale(1.04)}50%{transform:translateY(0) rotateX(0deg) scale(1)}62%{transform:translateY(-2px) scale(0.98)}}
+  .hang-marker .shadow{position:absolute;bottom:2px;width:22px;height:6px;border-radius:50%;background:rgba(0,0,0,0.45);filter:blur(1px);animation:shadow-pulse 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
+  @keyframes shadow-pulse{0%,100%{transform:scaleX(1);opacity:0.45}25%{transform:scaleX(0.6);opacity:0.2}50%{transform:scaleX(1);opacity:0.45}}
+  .hang-marker.me .avatar3d{background:linear-gradient(135deg,#F8DCA0,#E8B65C);border-color:rgba(255,255,255,0.6)}
+
+  #radius-circle{pointer-events:none}
+
+  #toast{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:50%;transform:translateX(-50%) translateY(-8px);z-index:70;padding:10px 16px;border-radius:14px;font-size:12.5px;opacity:0;pointer-events:none;transition:all .25s ease;max-width:86vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  #banner{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 86px);left:14px;right:14px;z-index:15;padding:9px 13px;border-radius:14px;font-size:11px;color:var(--faint);text-align:center;line-height:1.5;pointer-events:none}
+
+  @media (prefers-reduced-motion: reduce){.avatar3d,.shadow,.ring,.radar,#ptt-btn.live,.dot{animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="topbar">
+  <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
+  <div id="nearby-strip">
+    <div id="nearby-count" class="glass">— nearby</div>
+    <div id="nearby-avatars" class="glass"></div>
+  </div>
+</div>
+
+<div id="radius-wrap"><div id="radius-control" class="glass"></div></div>
+
+<div id="filters"><div id="filter-row" class="glass"></div></div>
+
+<div id="banner" class="glass">Concept demo · sample people, not real · Walkie‑Talkie echoes locally (see note)</div>
+
+<div id="self-bar">
+  <div id="self-pill" class="glass">
+    <div id="self-avatar">🙂</div>
+    <div id="self-meta"><div class="name">You</div><div class="status" id="self-status">Status: Chill</div></div>
+    <button id="self-activity-btn">Set status</button>
+  </div>
+</div>
+
+<div id="status-sheet">
+  <div id="status-card" class="glass">
+    <div class="sheet-title">What are you up to?</div>
+    <div id="status-grid"></div>
+    <button id="status-close">Close</button>
+  </div>
+</div>
+
+<div id="profile-sheet">
+  <div id="profile-card" class="glass" style="position:relative">
+    <button id="profile-close">×</button>
+    <div id="profile-head">
+      <div id="profile-avatar"></div>
+      <div>
+        <div id="profile-name"></div>
+        <div id="profile-sub"></div>
+      </div>
+    </div>
+    <div id="profile-dist"></div>
+    <div id="ptt-zone">
+      <div id="ptt-label">Walkie‑Talkie</div>
+      <button id="ptt-btn"><span id="ptt-icon">🎙️</span></button>
+      <div id="ptt-wave"></div>
+      <div id="ptt-status">Hold to talk</div>
+      <div id="ptt-note">Demo mode: this plays your voice back to you (local echo) so you can feel the press‑and‑hold flow. Reaching a real nearby person needs a live backend — phase 2.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="glass"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* =========================================================================
+   HANG — concept demo
+   -------------------------------------------------------------------------
+   Single-file prototype to validate look/feel before committing to a real
+   mobile stack. Sample people + positions are generated locally; nothing
+   is sent anywhere. Uses Leaflet (CDN) for the map. The Walkie-Talkie
+   button uses the real microphone (MediaRecorder) and plays your own
+   recording back as a local echo — there is no backend yet, so it can't
+   reach another real person. That's the next phase, not this one.
+   ========================================================================= */
+
+const CATEGORIES = [
+  { id:"spirituality", label:"Spirituality", icon:"✨", grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)" },
+  { id:"prayer",       label:"Prayer",       icon:"🙏", grad:"linear-gradient(135deg,#F8DCA0,#E8B65C)" },
+  { id:"yoga",         label:"Yoga",         icon:"🧘", grad:"linear-gradient(135deg,#A6F0C8,#5FC78E)" },
+  { id:"study",        label:"Study",        icon:"📚", grad:"linear-gradient(135deg,#9BE7F2,#5BA7D6)" },
+  { id:"science",      label:"Science",      icon:"🔬", grad:"linear-gradient(135deg,#7FE0E0,#3FA7A7)" },
+  { id:"music",        label:"Music",        icon:"🎧", grad:"linear-gradient(135deg,#F7A6C4,#E0608F)" },
+  { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)" },
+  { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)" },
+  { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)" },
+  { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)" },
+];
+const catById = id => CATEGORIES.find(c => c.id === id);
+const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara","Jonas","Rhea","Mateo","Wren","Zara","Oli","Tess","Dev","Luca","Nia","Sam"];
+const RADII = [1,5,10,15,25];
+
+const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null };
+
+/* ---------- geo helpers ---------- */
+function jitterKm(lat, lon, maxKm){
+  const r = maxKm * Math.sqrt(Math.random());
+  const t = Math.random() * 2 * Math.PI;
+  const dLat = (r * Math.cos(t)) / 110.574;
+  const dLon = (r * Math.sin(t)) / (111.320 * Math.cos(lat * Math.PI/180));
+  return [lat + dLat, lon + dLon];
+}
+function haversineKm(a, b){
+  const R=6371, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(b[0]-a[0]), dLon=toRad(b[1]-a[1]);
+  const x = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+function genPeople(center){
+  const out = [];
+  for (let i=0;i<26;i++){
+    const cat = CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];
+    out.push({
+      id:"p"+i,
+      name: NAMES[i % NAMES.length],
+      cat: cat.id,
+      pos: jitterKm(center[0], center[1], 24),
+      delay: (Math.random()*2).toFixed(2)+"s"
+    });
+  }
+  return out;
+}
+
+/* ---------- map setup ---------- */
+const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16 }).setView(state.me, 13);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+  attribution:'&copy; Esri &copy; OpenStreetMap contributors', maxZoom:16
+}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom:16, opacity:0.85
+}).addTo(map);
+
+let radiusCircle = L.circle(state.me, { radius: state.radius*1000, color:'#7FD8E6', weight:1, fillColor:'#7FD8E6', fillOpacity:0.06, id:'radius-circle' }).addTo(map);
+let meMarker = null;
+let peopleMarkers = {};
+
+function meIcon(){
+  return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂</div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+}
+function personIcon(p){
+  const cat = catById(p.cat);
+  return L.divIcon({ className:'', html:`<div class="hang-marker"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div><div class="avatar3d" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div><div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+}
+
+function render(){
+  // radius circle
+  radiusCircle.setLatLng(state.me);
+  radiusCircle.setRadius(state.radius*1000);
+  // me marker
+  if (!meMarker) meMarker = L.marker(state.me, { icon: meIcon(), zIndexOffset:1000 }).addTo(map);
+  else meMarker.setLatLng(state.me);
+
+  // filter + distance
+  const visible = state.people.filter(p => {
+    const d = haversineKm(state.me, p.pos);
+    p._dist = d;
+    if (d > state.radius) return false;
+    if (state.activeFilters.size && !state.activeFilters.has(p.cat)) return false;
+    return true;
+  });
+
+  // sync markers
+  const keep = new Set(visible.map(p=>p.id));
+  Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
+  visible.forEach(p => {
+    if (!peopleMarkers[p.id]) {
+      const m = L.marker(p.pos, { icon: personIcon(p) });
+      m.on('click', () => openProfile(p));
+      m.addTo(map);
+      peopleMarkers[p.id] = m;
+    }
+  });
+
+  document.getElementById('nearby-count').textContent = `${visible.length} nearby`;
+  renderNearbyStrip(visible);
+}
+
+/* ---------- top-right strip ---------- */
+function renderNearbyStrip(visible){
+  const wrap = document.getElementById('nearby-avatars');
+  wrap.innerHTML = '';
+  visible.slice(0,14).forEach(p => {
+    const cat = catById(p.cat);
+    const el = document.createElement('div');
+    el.className = 'mini-avatar live' + (state.selected && state.selected.id===p.id ? ' selected' : '');
+    el.style.background = cat.grad;
+    el.innerHTML = `<span class="ring"></span>${cat.icon}`;
+    el.title = `${p.name} · ${cat.label}`;
+    el.onclick = () => { map.panTo(p.pos); openProfile(p); };
+    wrap.appendChild(el);
+  });
+}
+
+/* ---------- category filter chips ---------- */
+function renderFilters(){
+  const row = document.getElementById('filter-row');
+  row.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (state.activeFilters.has(c.id) ? ' active' : '');
+    chip.innerHTML = `<span class="ic">${c.icon}</span>${c.label}`;
+    chip.onclick = () => {
+      if (state.activeFilters.has(c.id)) state.activeFilters.delete(c.id); else state.activeFilters.add(c.id);
+      renderFilters(); render();
+    };
+    row.appendChild(chip);
+  });
+}
+
+/* ---------- radius control ---------- */
+function renderRadius(){
+  const wrap = document.getElementById('radius-control');
+  wrap.innerHTML = '';
+  RADII.forEach(r => {
+    const b = document.createElement('button');
+    b.textContent = r+'km';
+    b.className = r===state.radius ? 'active' : '';
+    b.onclick = () => { state.radius = r; renderRadius(); render(); showToast(`Showing people within ${r} km`); };
+    wrap.appendChild(b);
+  });
+}
+
+/* ---------- status sheet ---------- */
+function renderStatusGrid(){
+  const grid = document.getElementById('status-grid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const opt = document.createElement('button');
+    opt.className = 'status-opt' + (state.status===c.id ? ' active' : '');
+    opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>`;
+    opt.onclick = () => {
+      state.status = c.id;
+      document.getElementById('self-status').textContent = 'Status: ' + c.label;
+      document.getElementById('self-avatar').textContent = c.icon;
+      document.getElementById('self-avatar').style.background = c.grad;
+      renderStatusGrid();
+      closeStatusSheet();
+      showToast(`You're now showing as ${c.label} on the map`);
+    };
+    grid.appendChild(opt);
+  });
+}
+const statusSheet = document.getElementById('status-sheet');
+document.getElementById('self-activity-btn').onclick = () => { renderStatusGrid(); statusSheet.classList.add('open'); };
+document.getElementById('status-close').onclick = closeStatusSheet;
+statusSheet.onclick = e => { if (e.target === statusSheet) closeStatusSheet(); };
+function closeStatusSheet(){ statusSheet.classList.remove('open'); }
+
+/* ---------- profile sheet + walkie-talkie ---------- */
+const profileSheet = document.getElementById('profile-sheet');
+function openProfile(p){
+  state.selected = p;
+  const cat = catById(p.cat);
+  document.getElementById('profile-avatar').style.background = cat.grad;
+  document.getElementById('profile-avatar').textContent = cat.icon;
+  document.getElementById('profile-name').textContent = p.name;
+  document.getElementById('profile-sub').textContent = `Right now: ${cat.label}`;
+  document.getElementById('profile-dist').textContent = `${p._dist.toFixed(1)} km away`;
+  profileSheet.classList.add('open');
+  renderNearbyStrip(Object.values(peopleMarkers).map(() => null).filter(Boolean)); // no-op safe guard
+  render();
+}
+document.getElementById('profile-close').onclick = () => { profileSheet.classList.remove('open'); state.selected=null; render(); };
+
+/* --- push-to-talk: real mic capture, local echo playback --- */
+const pttBtn = document.getElementById('ptt-btn');
+const pttStatus = document.getElementById('ptt-status');
+const waveWrap = document.getElementById('ptt-wave');
+for (let i=0;i<9;i++){ const s=document.createElement('span'); waveWrap.appendChild(s); }
+const waveBars = [...waveWrap.children];
+
+let audioCtx=null, analyser=null, srcNode=null, mediaStream=null, recorder=null, chunks=[], rafId=null;
+function beep(freqFrom, freqTo, dur){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(freqFrom, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freqTo, audioCtx.currentTime+dur);
+    g.gain.setValueAtTime(0.14, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function animateWave(){
+  if (!analyser) return;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  waveBars.forEach((bar,i) => { const v = data[i*3] || 0; bar.style.height = Math.max(4, (v/255)*20)+'px'; });
+  rafId = requestAnimationFrame(animateWave);
+}
+async function startTalk(){
+  if (!state.selected) return;
+  pttBtn.classList.add('live'); pttStatus.textContent = 'Transmitting…'; beep(420,640,0.1);
+  try{
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    srcNode = audioCtx.createMediaStreamSource(mediaStream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 64;
+    srcNode.connect(analyser);
+    animateWave();
+    chunks = [];
+    recorder = new MediaRecorder(mediaStream);
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.start();
+  }catch(err){
+    pttStatus.textContent = 'Mic blocked — allow microphone access to try this';
+    pttBtn.classList.remove('live');
+  }
+}
+function stopTalk(){
+  if (rafId) cancelAnimationFrame(rafId);
+  waveBars.forEach(b => b.style.height='4px');
+  pttBtn.classList.remove('live');
+  beep(640,300,0.12);
+  if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  if (recorder && recorder.state !== 'inactive'){
+    recorder.onstop = () => {
+      if (!chunks.length) { pttStatus.textContent = 'Hold to talk'; return; }
+      pttStatus.textContent = `Echo: that's how ${state.selected ? state.selected.name : 'they'} would hear you`;
+      const blob = new Blob(chunks, { type:'audio/webm' });
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.play().catch(()=>{});
+      audio.onended = () => { pttStatus.textContent = 'Hold to talk'; };
+    };
+    recorder.stop();
+  } else {
+    pttStatus.textContent = 'Hold to talk';
+  }
+}
+pttBtn.addEventListener('mousedown', startTalk);
+pttBtn.addEventListener('touchstart', e => { e.preventDefault(); startTalk(); }, { passive:false });
+pttBtn.addEventListener('mouseup', stopTalk);
+pttBtn.addEventListener('mouseleave', () => { if (pttBtn.classList.contains('live')) stopTalk(); });
+pttBtn.addEventListener('touchend', e => { e.preventDefault(); stopTalk(); });
+
+/* ---------- toast ---------- */
+let toastTimer=null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------- boot ---------- */
+function boot(center){
+  state.me = center;
+  state.people = genPeople(center);
+  map.setView(center, 13);
+  render();
+  renderFilters();
+  renderRadius();
+  renderStatusGrid();
+}
+if (navigator.geolocation){
+  navigator.geolocation.getCurrentPosition(
+    pos => boot([pos.coords.latitude, pos.coords.longitude]),
+    () => { boot(state.me); showToast('Using a sample location — location access was denied'); },
+    { timeout:4000 }
+  );
+} else {
+  boot(state.me);
+}
+</script>
+</body>
+</html>
