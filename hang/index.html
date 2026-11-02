@@ -136,12 +136,59 @@
 
   #banner{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 86px);left:14px;right:14px;z-index:15;padding:9px 13px;border-radius:14px;font-size:11px;color:var(--faint);text-align:center;line-height:1.5;pointer-events:none}
 
+  /* ---------- high-tech HUD layer ---------- */
+  #scanlines{position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:0.35;background:repeating-linear-gradient(0deg,rgba(255,255,255,0.05) 0px,rgba(255,255,255,0.05) 1px,transparent 1px,transparent 3px)}
+  #vignette{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(2,4,8,0.55) 100%)}
+  #radar-sweep{position:fixed;top:50%;left:50%;width:560px;height:560px;margin:-280px 0 0 -280px;z-index:6;pointer-events:none;border-radius:50%;opacity:0.5}
+  #radar-sweep::before{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(127,216,230,0.18)}
+  #radar-sweep::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(127,216,230,0.0) 0deg,rgba(127,216,230,0.0) 300deg,rgba(127,216,230,0.22) 338deg,rgba(185,240,246,0.55) 356deg,rgba(127,216,230,0.0) 360deg);animation:radar-spin 4.2s linear infinite}
+  @keyframes radar-spin{to{transform:rotate(360deg)}}
+  #radar-rings{position:fixed;top:50%;left:50%;width:1px;height:1px;z-index:6;pointer-events:none}
+  .radar-ring{position:absolute;top:0;left:0;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:1px solid rgba(127,216,230,0.35);animation:radar-ring-grow 4.2s ease-out infinite}
+  @keyframes radar-ring-grow{0%{width:40px;height:40px;margin:-20px 0 0 -20px;opacity:0.5}100%{width:520px;height:520px;margin:-260px 0 0 -260px;opacity:0}}
+
+  /* spark connection line */
+  .spark-line{animation:spark-dash 1.1s linear infinite}
+  @keyframes spark-dash{to{stroke-dashoffset:-24}}
+
+  /* spark card */
+  #spark-card{position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top) + 110px);z-index:75;border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(-14px) scale(0.97);pointer-events:none;transition:all .35s cubic-bezier(.2,.9,.3,1.1);border:1px solid rgba(127,216,230,0.4);box-shadow:0 0 0 1px rgba(127,216,230,0.12),0 12px 30px rgba(0,0,0,0.5),0 0 28px rgba(127,216,230,0.18)}
+  #spark-card.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  #spark-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;position:relative}
+  #spark-icon::after{content:'✨';position:absolute;top:-6px;right:-6px;font-size:13px}
+  #spark-title{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:2px;font-weight:700}
+  #spark-text{font-size:13px;color:var(--text);line-height:1.35}
+  #spark-go{all:unset;flex-shrink:0;padding:9px 13px;border-radius:12px;font-size:12px;font-weight:700;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6);cursor:pointer}
+
+  /* marker spark glow */
+  .hang-marker.sparked .avatar3d{box-shadow:0 0 0 3px rgba(127,216,230,0.5),0 0 22px 6px rgba(127,216,230,0.55),0 6px 14px rgba(0,0,0,0.5);animation:hop 2.4s cubic-bezier(.33,0,.2,1) infinite,spark-pulse 1s ease-in-out 3}
+  @keyframes spark-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+
+  /* profile sheet "materializing" HUD entrance */
+  #profile-card.glitch-in{animation:glitch-in .5s steps(2,end)}
+  @keyframes glitch-in{0%{clip-path:inset(0 0 100% 0);opacity:0}15%{clip-path:inset(40% 0 20% 0);opacity:1}30%{clip-path:inset(10% 0 60% 0)}45%{clip-path:inset(70% 0 5% 0)}60%{clip-path:inset(20% 0 40% 0)}100%{clip-path:inset(0 0 0 0)}}
+
+  @media (prefers-reduced-motion: reduce){#radar-sweep::after,.radar-ring,#profile-card.glitch-in,.spark-line{animation:none!important}}
+
   @media (prefers-reduced-motion: reduce){.avatar3d,.shadow,.ring,.radar,#ptt-btn.live,.dot{animation:none!important}}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="radar-sweep"></div>
+<div id="radar-rings"><div class="radar-ring"></div></div>
+
+<div id="spark-card" class="glass">
+  <div id="spark-icon"></div>
+  <div style="flex:1;min-width:0">
+    <div id="spark-title">Spark detected</div>
+    <div id="spark-text"></div>
+  </div>
+  <button id="spark-go">View</button>
+</div>
 
 <div id="topbar">
   <div style="display:flex;align-items:center;gap:8px;pointer-events:auto">
@@ -243,6 +290,8 @@ const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara",
 const RADII = [1,5,10,15,25];
 
 const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null };
+const sparkedIds = new Set();
+let sparkLine = null;
 
 /* ---------- geo helpers ---------- */
 function jitterKm(lat, lon, maxKm){
@@ -271,6 +320,19 @@ function genPeople(center){
       delay: (Math.random()*2).toFixed(2)+"s"
     });
   }
+  // Guaranteed close-range plants so the Sparks feature actually has
+  // something to find nearby, regardless of which status gets picked
+  // ("chill" is the default status, so it's planted first).
+  const plantCats = ['chill', CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)].id, CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)].id];
+  plantCats.forEach((catId, i) => {
+    out.push({
+      id:"plant"+i,
+      name: NAMES[(NAMES.length-1-i) % NAMES.length],
+      cat: catId,
+      pos: jitterKm(center[0], center[1], 0.4 + i*0.4),
+      delay: (Math.random()*2).toFixed(2)+"s"
+    });
+  });
   return out;
 }
 
@@ -290,9 +352,9 @@ let peopleMarkers = {};
 function meIcon(){
   return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂</div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
-function personIcon(p){
+function personIcon(p, sparked){
   const cat = catById(p.cat);
-  return L.divIcon({ className:'', html:`<div class="hang-marker"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div><div class="avatar3d" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div><div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+  return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div><div class="avatar3d" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div><div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
 
 function render(){
@@ -317,7 +379,7 @@ function render(){
   Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
   visible.forEach(p => {
     if (!peopleMarkers[p.id]) {
-      const m = L.marker(p.pos, { icon: personIcon(p) });
+      const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
       m.on('click', () => openProfile(p));
       m.addTo(map);
       peopleMarkers[p.id] = m;
@@ -389,6 +451,7 @@ function renderStatusGrid(){
       renderStatusGrid();
       closeStatusSheet();
       showToast(`You're now showing as ${c.label} on the map`);
+      checkSparks();
     };
     grid.appendChild(opt);
   });
@@ -410,7 +473,8 @@ function openProfile(p){
   document.getElementById('profile-sub').textContent = `Right now: ${cat.label}`;
   document.getElementById('profile-dist').textContent = `${p._dist.toFixed(1)} km away`;
   profileSheet.classList.add('open');
-  renderNearbyStrip(Object.values(peopleMarkers).map(() => null).filter(Boolean)); // no-op safe guard
+  const card = document.getElementById('profile-card');
+  card.classList.remove('glitch-in'); void card.offsetWidth; card.classList.add('glitch-in');
   render();
 }
 document.getElementById('profile-close').onclick = () => { profileSheet.classList.remove('open'); state.selected=null; render(); };
@@ -433,6 +497,71 @@ function beep(freqFrom, freqTo, dur){
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
     o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur);
   }catch(e){}
+}
+function scanPing(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(1800, audioCtx.currentTime);
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.3);
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.3);
+  }catch(e){}
+}
+function sparkChime(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+      const t0 = audioCtx.currentTime + i*0.09;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(f, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.13, t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+0.5);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0); o.stop(t0+0.5);
+    });
+  }catch(e){}
+}
+
+function buzz(pattern){ try{ if (navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+/* ---------- Sparks: real-time match detection ---------- */
+function triggerSpark(person){
+  if (sparkedIds.has(person.id)) return;
+  sparkedIds.add(person.id);
+  const marker = peopleMarkers[person.id];
+  if (marker) marker.setIcon(personIcon(person, true));
+
+  if (sparkLine) { map.removeLayer(sparkLine); sparkLine = null; }
+  sparkLine = L.polyline([state.me, person.pos], { color:'#7FD8E6', weight:2, opacity:0.85, dashArray:'6 10', className:'spark-line' }).addTo(map);
+  setTimeout(() => { if (sparkLine) { map.removeLayer(sparkLine); sparkLine = null; } }, 9000);
+
+  const cat = catById(person.cat);
+  const iconEl = document.getElementById('spark-icon');
+  iconEl.textContent = cat.icon;
+  iconEl.style.background = cat.grad;
+  document.getElementById('spark-text').textContent = `You and ${person.name} are both doing ${cat.label.toLowerCase()} — ${person._dist.toFixed(1)}km apart, right now.`;
+  const card = document.getElementById('spark-card');
+  card.classList.add('show');
+  sparkChime();
+  buzz([20,40,20,60,20]);
+  document.getElementById('spark-go').onclick = () => {
+    card.classList.remove('show');
+    map.panTo(person.pos);
+    openProfile(person);
+  };
+  clearTimeout(window.__sparkCardTimer);
+  window.__sparkCardTimer = setTimeout(() => card.classList.remove('show'), 7000);
+}
+function checkSparks(){
+  if (!state.status) return;
+  scanPing();
+  const candidates = state.people.filter(p => p.cat === state.status && !sparkedIds.has(p.id));
+  candidates.forEach(p => { p._dist = haversineKm(state.me, p.pos); });
+  const close = candidates.filter(p => p._dist <= 1.5).sort((a,b) => a._dist - b._dist);
+  if (close.length) triggerSpark(close[0]);
 }
 function animateWave(){
   if (!analyser) return;
@@ -541,7 +670,8 @@ function boot(center){
   renderStatusGrid();
   let seenBefore = false;
   try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
-  if (!seenBefore) openOnboard();
+  if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
+  setInterval(checkSparks, 6500);
 }
 if (navigator.geolocation){
   navigator.geolocation.getCurrentPosition(
