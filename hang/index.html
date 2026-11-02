@@ -77,6 +77,24 @@
   .status-opt.active span{color:var(--text)}
   #status-close{all:unset;display:block;width:100%;text-align:center;padding:13px 0;border-radius:14px;color:var(--muted);font-size:13px;border:1px solid var(--line)}
 
+  /* ---------- onboarding tutorial ---------- */
+  #onboard{position:fixed;inset:0;z-index:90;background:rgba(5,6,10,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:22px;opacity:0;pointer-events:none;transition:opacity .25s ease}
+  #onboard.open{opacity:1;pointer-events:auto}
+  #onboard-card{width:100%;max-width:380px;border-radius:24px;padding:28px 22px 22px;position:relative;transform:scale(0.96);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
+  #onboard.open #onboard-card{transform:scale(1)}
+  #onboard-skip{all:unset;position:absolute;top:16px;right:18px;color:var(--faint);font-size:12px;cursor:pointer}
+  #onboard-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  #onboard-title{font-size:20px;font-weight:700;margin-bottom:10px;line-height:1.25}
+  #onboard-body{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:22px}
+  #onboard-dots{display:flex;gap:6px;margin-bottom:18px;justify-content:center}
+  #onboard-dots span{height:6px;border-radius:999px;background:rgba(255,255,255,0.16);transition:all .25s ease}
+  #onboard-dots span.active{width:18px;background:var(--accent)}
+  #onboard-dots span:not(.active){width:6px}
+  #onboard-actions{display:flex;gap:8px}
+  #onboard-back{all:unset;padding:13px 18px;border-radius:14px;cursor:pointer;color:var(--muted);border:1px solid var(--line);font-size:13.5px}
+  #onboard-next{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6)}
+  #help-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;font-weight:700;border:1px solid var(--line)}
+
   /* ---------- profile sheet ---------- */
   #profile-sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.9,.3,1.1)}
   #profile-sheet.open{transform:translateY(0)}
@@ -126,7 +144,10 @@
 <div id="map"></div>
 
 <div id="topbar">
-  <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
+  <div style="display:flex;align-items:center;gap:8px;pointer-events:auto">
+    <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
+    <button id="help-btn" class="glass" aria-label="Show tutorial">?</button>
+  </div>
   <div id="nearby-strip">
     <div id="nearby-count" class="glass">— nearby</div>
     <div id="nearby-avatars" class="glass"></div>
@@ -177,6 +198,20 @@
 </div>
 
 <div id="toast" class="glass"></div>
+
+<div id="onboard">
+  <div id="onboard-card" class="glass">
+    <button id="onboard-skip">Skip</button>
+    <div id="onboard-icon"></div>
+    <div id="onboard-title"></div>
+    <div id="onboard-body"></div>
+    <div id="onboard-dots"></div>
+    <div id="onboard-actions">
+      <button id="onboard-back">Back</button>
+      <button id="onboard-next">Next</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
@@ -460,6 +495,41 @@ function showToast(msg){
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
 }
 
+/* ---------- onboarding tutorial ---------- */
+const ONBOARD_KEY = 'hang-onboarded';
+const ONBOARD_STEPS = [
+  { icon:'👋', color:'#7FD8E6', title:'Welcome to Hang', body:"See who's nearby and what they're up to, live on the map. Nobody shows up unless they choose to — you control exactly what you share." },
+  { icon:'🧘', color:'#A6F0C8', title:'Set your status', body:'Tap "Set status" to pick what you\'re doing right now — yoga, study, prayer, coffee, whatever\'s true. That\'s what puts your avatar on the map for others.' },
+  { icon:'🎚️', color:'#F0C57C', title:'Filter & radius', body:'Use the category chips to show only certain activities, and the radius control to set how far out you look — from 1km up to 25km.' },
+  { icon:'🎙️', color:'#E86A6A', title:'Walkie-Talkie', body:"Tap anyone nearby to open their profile, then press and hold the mic button to talk — just like a real walkie-talkie." },
+];
+let obStep = 0;
+function renderOnboard(){
+  const s = ONBOARD_STEPS[obStep];
+  document.getElementById('onboard-icon').textContent = s.icon;
+  document.getElementById('onboard-icon').style.background = s.color + '33';
+  document.getElementById('onboard-icon').style.border = '1px solid ' + s.color + '66';
+  document.getElementById('onboard-title').textContent = s.title;
+  document.getElementById('onboard-body').textContent = s.body;
+  const dots = document.getElementById('onboard-dots');
+  dots.innerHTML = '';
+  ONBOARD_STEPS.forEach((_, i) => {
+    const d = document.createElement('span');
+    if (i === obStep) d.className = 'active';
+    dots.appendChild(d);
+  });
+  document.getElementById('onboard-back').style.visibility = obStep === 0 ? 'hidden' : 'visible';
+  document.getElementById('onboard-next').textContent = obStep === ONBOARD_STEPS.length - 1 ? "Let's go" : 'Next';
+}
+function openOnboard(){ obStep = 0; renderOnboard(); document.getElementById('onboard').classList.add('open'); }
+function closeOnboard(){ document.getElementById('onboard').classList.remove('open'); try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){} }
+document.getElementById('onboard-next').onclick = () => {
+  if (obStep < ONBOARD_STEPS.length - 1) { obStep++; renderOnboard(); } else { closeOnboard(); }
+};
+document.getElementById('onboard-back').onclick = () => { if (obStep > 0) { obStep--; renderOnboard(); } };
+document.getElementById('onboard-skip').onclick = closeOnboard;
+document.getElementById('help-btn').onclick = openOnboard;
+
 /* ---------- boot ---------- */
 function boot(center){
   state.me = center;
@@ -469,6 +539,9 @@ function boot(center){
   renderFilters();
   renderRadius();
   renderStatusGrid();
+  let seenBefore = false;
+  try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
+  if (!seenBefore) openOnboard();
 }
 if (navigator.geolocation){
   navigator.geolocation.getCurrentPosition(
