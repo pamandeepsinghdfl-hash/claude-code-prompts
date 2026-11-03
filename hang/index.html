@@ -15,7 +15,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
   #map{position:absolute;inset:0;z-index:0;background:#0b0d14}
-  .leaflet-tile-pane{filter:saturate(0.85) brightness(0.9)}
+  .leaflet-tile-pane{filter:saturate(1.6) contrast(1.12) brightness(0.78) hue-rotate(-6deg)}
   .leaflet-control-attribution{background:rgba(0,0,0,0.4)!important;color:var(--faint)!important;font-size:9px!important}
   .leaflet-control-attribution a{color:var(--muted)!important}
   .leaflet-control-zoom{display:none}
@@ -130,6 +130,16 @@
   .hang-marker .shadow{position:absolute;bottom:2px;width:22px;height:6px;border-radius:50%;background:rgba(0,0,0,0.45);filter:blur(1px);animation:shadow-pulse 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
   @keyframes shadow-pulse{0%,100%{transform:scaleX(1);opacity:0.45}25%{transform:scaleX(0.6);opacity:0.2}50%{transform:scaleX(1);opacity:0.45}}
   .hang-marker.me .avatar3d{background:linear-gradient(135deg,#F8DCA0,#E8B65C);border-color:rgba(255,255,255,0.6)}
+
+  /* GTA-style zoomed-out activity blips */
+  .cluster-blip{position:relative;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cgrad);border:2px solid rgba(255,255,255,0.55);box-shadow:0 6px 16px rgba(0,0,0,0.55), 0 0 0 5px rgba(255,255,255,0.08);cursor:pointer;animation:hop 2.6s cubic-bezier(.33,0,.2,1) infinite}
+  .cluster-blip::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:1.5px dashed rgba(255,255,255,0.4);animation:cluster-spin 9s linear infinite}
+  @keyframes cluster-spin{to{transform:rotate(360deg)}}
+  .cluster-ic{font-size:19px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4))}
+  .cluster-count{position:absolute;top:-6px;right:-6px;background:#0A1014;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:999px;padding:0 4px;border:1.5px solid rgba(255,255,255,0.45)}
+
+  /* static decorative "real life objects" */
+  .landmark{font-size:17px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55))}
 
   #radius-circle{pointer-events:none}
 
@@ -326,9 +336,15 @@ function destPoint(lat, lon, bearing, distKm){
   return [lat + dLat, lon + dLon];
 }
 
+const PEOPLE_COUNT = 300;
+const LANDMARK_ICONS = ['🌳','🌳','🌳','🌳','🌳','🌳','🌳','🌳','🌲','🌲','🌲','🪑','🪑','🪑','☕','⛲','🏛️','🚏','🚏','🏪','🏪','🌳','🌳','🪑'];
+function genLandmarks(center){
+  return LANDMARK_ICONS.map((icon, i) => ({ id:'lm'+i, icon, pos: jitterKm(center[0], center[1], 3.2) }));
+}
+
 function genPeople(center){
   const out = [];
-  for (let i=0;i<26;i++){
+  for (let i=0;i<PEOPLE_COUNT;i++){
     const cat = CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];
     const pos = jitterKm(center[0], center[1], 24);
     out.push({
@@ -396,17 +412,17 @@ function tickMovement(){
 }
 
 /* ---------- map setup ---------- */
-const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16 }).setView(state.me, 13);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16, minZoom:10 }).setView(state.me, 13);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
   attribution:'&copy; Esri &copy; OpenStreetMap contributors', maxZoom:16
-}).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom:16, opacity:0.85
 }).addTo(map);
 
 let radiusCircle = L.circle(state.me, { radius: state.radius*1000, color:'#7FD8E6', weight:1, fillColor:'#7FD8E6', fillOpacity:0.06, id:'radius-circle' }).addTo(map);
 let meMarker = null;
 let peopleMarkers = {};
+let clusterMarkers = {};
+let landmarkMarkers = [];
+const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
   return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂</div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
@@ -414,6 +430,78 @@ function meIcon(){
 function personIcon(p, sparked){
   const cat = catById(p.cat);
   return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div><div class="avatar3d" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div><div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+}
+function clusterIcon(count, cat){
+  return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
+}
+function landmarkIcon(icon){
+  return L.divIcon({ className:'', html:`<div class="landmark">${icon}</div>`, iconSize:[22,26], iconAnchor:[11,22] });
+}
+
+/* GTA-style zoom LOD: zoomed out shows clustered activity blips (cheap,
+   readable at a glance); zoomed in resolves into full detailed avatars.
+   Clusters are grid-binned in lat/lon — an approximation, not an
+   equal-area projection, which is fine at map scale. */
+function clusterGridDeg(zoom){
+  const table = {10:0.22, 11:0.12, 12:0.065, 13:0.034};
+  return table[zoom] || (zoom < 10 ? 0.4 : 0.018);
+}
+function clearClusterMarkers(){ Object.values(clusterMarkers).forEach(m => map.removeLayer(m)); clusterMarkers = {}; }
+function clearPeopleMarkers(){ Object.values(peopleMarkers).forEach(m => map.removeLayer(m)); peopleMarkers = {}; }
+
+function renderClusters(visible){
+  clearPeopleMarkers();
+  const cell = clusterGridDeg(map.getZoom());
+  const groups = {};
+  visible.forEach(p => {
+    const key = Math.round(p.pos[0]/cell) + '_' + Math.round(p.pos[1]/cell);
+    (groups[key] || (groups[key] = [])).push(p);
+  });
+  const keep = new Set(Object.keys(groups));
+  Object.keys(clusterMarkers).forEach(key => { if (!keep.has(key)) { map.removeLayer(clusterMarkers[key]); delete clusterMarkers[key]; } });
+  Object.entries(groups).forEach(([key, members]) => {
+    const lat = members.reduce((a,p)=>a+p.pos[0],0) / members.length;
+    const lon = members.reduce((a,p)=>a+p.pos[1],0) / members.length;
+    const counts = {};
+    members.forEach(p => counts[p.cat] = (counts[p.cat]||0) + 1);
+    const dominantCat = catById(Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0]);
+    if (!clusterMarkers[key]) {
+      const m = L.marker([lat,lon], { icon: clusterIcon(members.length, dominantCat) });
+      m.on('click', () => map.setView([lat,lon], Math.min(map.getZoom()+3, 16)));
+      m.addTo(map);
+      clusterMarkers[key] = m;
+    } else {
+      clusterMarkers[key].setLatLng([lat,lon]);
+      clusterMarkers[key].setIcon(clusterIcon(members.length, dominantCat));
+    }
+  });
+}
+function renderDetail(visible){
+  clearClusterMarkers();
+  // Cap individual markers to what's actually on screen (plus a margin)
+  // so 300 simulated people never means 300 live DOM nodes at once.
+  const bounds = map.getBounds().pad(0.2);
+  const onscreen = visible.filter(p => bounds.contains(p.pos));
+  const keep = new Set(onscreen.map(p=>p.id));
+  Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
+  onscreen.forEach(p => {
+    if (!peopleMarkers[p.id]) {
+      const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
+      m.on('click', () => openProfile(p));
+      m.addTo(map);
+      peopleMarkers[p.id] = m;
+    } else {
+      peopleMarkers[p.id].setLatLng(p.pos);
+    }
+  });
+}
+function renderLandmarks(){
+  landmarkMarkers.forEach(m => map.removeLayer(m));
+  landmarkMarkers = [];
+  if (map.getZoom() < 13) return; // decluttered when zoomed out, same as the GTA-style LOD for people
+  (state.landmarks||[]).forEach(l => {
+    landmarkMarkers.push(L.marker(l.pos, { icon: landmarkIcon(l.icon), interactive:false, zIndexOffset:-500 }).addTo(map));
+  });
 }
 
 function render(){
@@ -433,17 +521,9 @@ function render(){
     return true;
   });
 
-  // sync markers
-  const keep = new Set(visible.map(p=>p.id));
-  Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
-  visible.forEach(p => {
-    if (!peopleMarkers[p.id]) {
-      const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
-      m.on('click', () => openProfile(p));
-      m.addTo(map);
-      peopleMarkers[p.id] = m;
-    }
-  });
+  if (map.getZoom() <= CLUSTER_ZOOM_MAX) renderClusters(visible);
+  else renderDetail(visible);
+  renderLandmarks();
 
   document.getElementById('nearby-count').textContent = `${visible.length} nearby`;
   renderNearbyStrip(visible);
@@ -758,9 +838,11 @@ document.getElementById('onboard-skip').onclick = closeOnboard;
 document.getElementById('help-btn').onclick = openOnboard;
 
 /* ---------- boot ---------- */
+let moveRenderTimer = null;
 function boot(center){
   state.me = center;
   state.people = genPeople(center);
+  state.landmarks = genLandmarks(center);
   map.setView(center, 13);
   render();
   renderFilters();
@@ -771,6 +853,8 @@ function boot(center){
   if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
   setInterval(checkSparks, 6500);
   setInterval(tickMovement, 1000);
+  map.on('zoomend', render);
+  map.on('moveend', () => { clearTimeout(moveRenderTimer); moveRenderTimer = setTimeout(render, 150); });
   if (navigator.geolocation && navigator.geolocation.watchPosition){
     navigator.geolocation.watchPosition(handleGeoAuto, () => {}, { enableHighAccuracy:true, maximumAge:4000 });
   }
