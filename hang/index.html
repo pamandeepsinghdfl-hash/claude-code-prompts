@@ -62,11 +62,13 @@
   #self-meta .name{font-size:13px;font-weight:700}
   #self-meta .status{font-size:10.5px;color:var(--muted)}
   #self-activity-btn{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6);padding:8px 14px;border-radius:999px;white-space:nowrap}
+  #auto-toggle{all:unset;cursor:pointer;font-size:10.5px;font-weight:600;color:var(--faint);padding:7px 10px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);transition:all .2s ease}
+  #auto-toggle.on{color:var(--accent);border-color:rgba(127,216,230,0.4);background:rgba(127,216,230,0.1)}
 
   /* ---------- status picker ---------- */
   #status-sheet{position:fixed;inset:0;z-index:60;background:rgba(5,6,10,0.72);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease}
   #status-sheet.open{opacity:1;pointer-events:auto}
-  #status-card{width:100%;max-width:460px;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
+  #status-card{width:100%;max-width:460px;max-height:82vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
   #status-sheet.open #status-card{transform:translateY(0)}
   .sheet-title{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);margin:0 4px 14px}
   #status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
@@ -211,6 +213,7 @@
   <div id="self-pill" class="glass">
     <div id="self-avatar">🙂</div>
     <div id="self-meta"><div class="name">You</div><div class="status" id="self-status">Status: Chill</div></div>
+    <button id="auto-toggle" class="on">🛰️ Auto</button>
     <button id="self-activity-btn">Set status</button>
   </div>
 </div>
@@ -284,12 +287,15 @@ const CATEGORIES = [
   { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)" },
   { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)" },
   { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)" },
+  { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5]  },
+  { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
+  { id:"dogwalk",      label:"Dog walk",     icon:"🐕", grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true },
 ];
 const catById = id => CATEGORIES.find(c => c.id === id);
 const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara","Jonas","Rhea","Mateo","Wren","Zara","Oli","Tess","Dev","Luca","Nia","Sam"];
 const RADII = [1,5,10,15,25];
 
-const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null };
+const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null, autoDetect:true };
 const sparkedIds = new Set();
 let sparkLine = null;
 
@@ -307,16 +313,33 @@ function haversineKm(a, b){
   const x = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
 }
+function bearingDeg(a, b){
+  const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
+  const y = Math.sin(toRad(b[1]-a[1]))*Math.cos(toRad(b[0]));
+  const x = Math.cos(toRad(a[0]))*Math.sin(toRad(b[0])) - Math.sin(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.cos(toRad(b[1]-a[1]));
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+function destPoint(lat, lon, bearing, distKm){
+  const rad = bearing * Math.PI/180;
+  const dLat = (distKm * Math.cos(rad)) / 110.574;
+  const dLon = (distKm * Math.sin(rad)) / (111.320 * Math.cos(lat * Math.PI/180));
+  return [lat + dLat, lon + dLon];
+}
 
 function genPeople(center){
   const out = [];
   for (let i=0;i<26;i++){
     const cat = CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];
+    const pos = jitterKm(center[0], center[1], 24);
     out.push({
       id:"p"+i,
       name: NAMES[i % NAMES.length],
       cat: cat.id,
-      pos: jitterKm(center[0], center[1], 24),
+      pos,
+      home: pos.slice(),
+      heading: Math.random()*360,
+      speedKmh: cat.moving ? cat.speed[0] + Math.random()*(cat.speed[1]-cat.speed[0]) : 0,
+      erratic: !!cat.erratic,
       delay: (Math.random()*2).toFixed(2)+"s"
     });
   }
@@ -325,15 +348,51 @@ function genPeople(center){
   // ("chill" is the default status, so it's planted first).
   const plantCats = ['chill', CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)].id, CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)].id];
   plantCats.forEach((catId, i) => {
+    const cat = catById(catId);
+    const pos = jitterKm(center[0], center[1], 0.4 + i*0.4);
     out.push({
       id:"plant"+i,
       name: NAMES[(NAMES.length-1-i) % NAMES.length],
       cat: catId,
-      pos: jitterKm(center[0], center[1], 0.4 + i*0.4),
+      pos,
+      home: pos.slice(),
+      heading: Math.random()*360,
+      speedKmh: cat.moving ? cat.speed[0] + Math.random()*(cat.speed[1]-cat.speed[0]) : 0,
+      erratic: !!cat.erratic,
       delay: (Math.random()*2).toFixed(2)+"s"
     });
   });
   return out;
+}
+
+/* ---------- movement physics: people with a moving category actually
+   walk/drive/wander around their own neighborhood tick by tick, with a
+   soft "leash" back toward where they started so nobody wanders off the
+   map forever. This is an organic-drift approximation, not real road
+   routing — driving people don't snap to streets. ---------- */
+function stepPerson(p, dtSec){
+  if (!p.speedKmh) return;
+  const turn = p.erratic ? 60 : 18;
+  p.heading += (Math.random()*turn*2 - turn);
+  const strayKm = haversineKm(p.home, p.pos);
+  const leash = p.erratic ? 0.5 : (p.speedKmh > 15 ? 4 : 1.2);
+  if (strayKm > leash) {
+    const back = bearingDeg(p.pos, p.home);
+    p.heading = back + (Math.random()*40 - 20);
+  }
+  const distKm = (p.speedKmh * dtSec) / 3600;
+  p.pos = destPoint(p.pos[0], p.pos[1], p.heading, distKm);
+}
+function tickMovement(){
+  let moved = false;
+  state.people.forEach(p => {
+    if (!p.speedKmh) return;
+    stepPerson(p, 1);
+    moved = true;
+    const m = peopleMarkers[p.id];
+    if (m) m.setLatLng(p.pos);
+  });
+  if (moved) render();
 }
 
 /* ---------- map setup ---------- */
@@ -436,6 +495,17 @@ function renderRadius(){
 }
 
 /* ---------- status sheet ---------- */
+function setStatus(catId, auto){
+  const c = catById(catId);
+  if (!c || state.status === catId) return;
+  state.status = catId;
+  document.getElementById('self-status').textContent = 'Status: ' + c.label + (auto ? ' (auto)' : '');
+  document.getElementById('self-avatar').textContent = c.icon;
+  document.getElementById('self-avatar').style.background = c.grad;
+  renderStatusGrid();
+  showToast(auto ? `Looks like you're ${c.label.toLowerCase()} — showing that on the map` : `You're now showing as ${c.label} on the map`);
+  checkSparks();
+}
 function renderStatusGrid(){
   const grid = document.getElementById('status-grid');
   grid.innerHTML = '';
@@ -443,16 +513,7 @@ function renderStatusGrid(){
     const opt = document.createElement('button');
     opt.className = 'status-opt' + (state.status===c.id ? ' active' : '');
     opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>`;
-    opt.onclick = () => {
-      state.status = c.id;
-      document.getElementById('self-status').textContent = 'Status: ' + c.label;
-      document.getElementById('self-avatar').textContent = c.icon;
-      document.getElementById('self-avatar').style.background = c.grad;
-      renderStatusGrid();
-      closeStatusSheet();
-      showToast(`You're now showing as ${c.label} on the map`);
-      checkSparks();
-    };
+    opt.onclick = () => { setStatus(c.id, false); closeStatusSheet(); };
     grid.appendChild(opt);
   });
 }
@@ -461,6 +522,43 @@ document.getElementById('self-activity-btn').onclick = () => { renderStatusGrid(
 document.getElementById('status-close').onclick = closeStatusSheet;
 statusSheet.onclick = e => { if (e.target === statusSheet) closeStatusSheet(); };
 function closeStatusSheet(){ statusSheet.classList.remove('open'); }
+
+/* ---------- auto-detect travel from real device movement ----------
+   Watches real GPS fixes; if sustained speed looks like walking or
+   driving, auto-switches your status (and avatar) to match — this is
+   what makes "if I'm traveling, show me traveling" actually real
+   instead of another manual toggle. Manually picking a status in the
+   sheet always wins until your speed changes again. */
+let lastGeoFix = null;
+const autoSpeedSamples = [];
+function handleGeoAuto(pos){
+  const now = Date.now();
+  const newPos = [pos.coords.latitude, pos.coords.longitude];
+  let speedKmh = (typeof pos.coords.speed === 'number' && pos.coords.speed >= 0) ? pos.coords.speed * 3.6 : null;
+  if (speedKmh == null && lastGeoFix) {
+    const dtH = (now - lastGeoFix.t) / 3600000;
+    if (dtH > 0) speedKmh = haversineKm(lastGeoFix.pos, newPos) / dtH;
+  }
+  lastGeoFix = { pos: newPos, t: now };
+  state.me = newPos;
+  if (speedKmh != null && state.autoDetect) {
+    autoSpeedSamples.push(speedKmh);
+    if (autoSpeedSamples.length > 4) autoSpeedSamples.shift();
+    if (autoSpeedSamples.length >= 3) {
+      const avg = autoSpeedSamples.reduce((a,b)=>a+b,0) / autoSpeedSamples.length;
+      if (avg > 18) setStatus('driving', true);
+      else if (avg > 2.5) setStatus('walking', true);
+    }
+  }
+  render();
+}
+function toggleAutoDetect(){
+  state.autoDetect = !state.autoDetect;
+  const btn = document.getElementById('auto-toggle');
+  if (btn) { btn.classList.toggle('on', state.autoDetect); btn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
+  showToast(state.autoDetect ? 'Auto-detecting travel from movement' : 'Auto-detect off — status stays manual');
+  if (!state.autoDetect) autoSpeedSamples.length = 0;
+}
 
 /* ---------- profile sheet + walkie-talkie ---------- */
 const profileSheet = document.getElementById('profile-sheet');
@@ -672,7 +770,12 @@ function boot(center){
   try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
   if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
   setInterval(checkSparks, 6500);
+  setInterval(tickMovement, 1000);
+  if (navigator.geolocation && navigator.geolocation.watchPosition){
+    navigator.geolocation.watchPosition(handleGeoAuto, () => {}, { enableHighAccuracy:true, maximumAge:4000 });
+  }
 }
+document.getElementById('auto-toggle').onclick = toggleAutoDetect;
 if (navigator.geolocation){
   navigator.geolocation.getCurrentPosition(
     pos => boot([pos.coords.latitude, pos.coords.longitude]),
