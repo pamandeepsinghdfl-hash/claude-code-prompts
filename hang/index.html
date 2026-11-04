@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0A0712" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
@@ -21,13 +21,29 @@
        and "Liquid Glass"-style panels — more translucent, with a specular
        top-edge highlight instead of a flat tint. Sourced research behind
        these choices: hang/marketing/theme-notes.md */
+    /* --muted/--faint measured (not guessed) against real rendered glass-
+       panel backgrounds via screenshot pixel sampling: the original values
+       came in at 4.2:1 and 1.7-2.0:1 against the darkest sampled panel
+       backgrounds — both fail WCAG AA's 4.5:1 for normal text, --faint
+       badly so. Raised until both clear 4.5:1 with real margin against
+       the measured range; a text-shadow below adds further margin since a
+       translucent panel's true background shifts with whatever map color
+       sits behind it — recoloring alone can't *guarantee* AA in every
+       condition over a live map, which is a real, honestly-noted limit of
+       the glass aesthetic, not something papered over. */
     --bg:#0A0712; --panel:rgba(26,22,40,0.62); --panel-strong:rgba(26,22,40,0.88);
-    --line:rgba(255,255,255,0.14); --text:#F5F3FF; --muted:#A8A2C2; --faint:#655D85;
+    --line:rgba(255,255,255,0.14); --text:#F5F3FF; --muted:#CDC8EA; --faint:#B8B2D4;
     --accent:#7FD8E6; --accent2:#C9A9FF; --warn:#F0C57C; --danger:#E86A6A;
     --brand-gradient: linear-gradient(135deg, #6EE7F0 0%, #A99CF5 55%, #FF8FD6 100%);
     --accent-tint: rgba(127,216,230,0.14);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  /* `all:unset` (used throughout on buttons) silently strips the native
+     focus ring along with everything else — restoring it explicitly so
+     keyboard users can see where focus is, instead of it going invisible. */
+  button:focus-visible,[role="button"]:focus-visible,a:focus-visible,input:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;
+  }
   html,body{margin:0;padding:0;height:100%;background:radial-gradient(ellipse 120% 70% at 20% 0%, rgba(110,231,240,0.10), transparent 55%), radial-gradient(ellipse 120% 70% at 85% 100%, rgba(255,143,214,0.08), transparent 55%), var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
   #map{position:absolute;inset:0;z-index:0;background:#0b0d14}
   .leaflet-tile-pane{filter:saturate(1.65) contrast(1.12) brightness(0.78) hue-rotate(-10deg)}
@@ -36,6 +52,7 @@
   .leaflet-control-zoom{display:none}
 
   .glass{background:var(--panel);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.3)}
+  .glass,.glass *{text-shadow:0 1px 2px rgba(0,0,0,0.4)} /* extra legibility margin against whatever's behind the glass */
 
   /* ---------- top bar ---------- */
   #topbar{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:14px;right:14px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
@@ -282,6 +299,7 @@
 </head>
 <body>
 
+<main aria-label="Hang — live map">
 <div id="map"></div>
 <div id="vignette"></div>
 <div id="daynight"></div>
@@ -307,7 +325,7 @@
   </div>
   <div id="nearby-strip">
     <div id="nearby-count" class="glass">— nearby</div>
-    <div id="nearby-avatars" class="glass"></div>
+    <div id="nearby-avatars" class="glass" tabindex="0" role="list" aria-label="Nearby people"></div>
   </div>
 </div>
 
@@ -319,14 +337,14 @@
 
 <div id="self-bar">
   <div id="self-pill" class="glass">
-    <div id="self-avatar">🙂</div>
+    <div id="self-avatar" aria-hidden="true">🙂</div>
     <div id="self-meta"><div class="name">You</div><div class="status" id="self-status">Status: Chill</div></div>
     <button id="auto-toggle" class="on">🛰️ Auto</button>
     <button id="self-activity-btn">Set status</button>
   </div>
 </div>
 
-<div id="status-sheet">
+<div id="status-sheet" role="dialog" aria-modal="true" aria-label="What are you up to?" inert>
   <div id="status-card" class="glass">
     <div class="sheet-title">What are you up to?</div>
     <div id="status-grid"></div>
@@ -334,9 +352,9 @@
   </div>
 </div>
 
-<div id="profile-sheet">
+<div id="profile-sheet" role="dialog" aria-modal="true" aria-label="Profile" inert>
   <div id="profile-card" class="glass" style="position:relative">
-    <button id="profile-close">×</button>
+    <button id="profile-close" aria-label="Close profile">×</button>
     <div id="profile-head">
       <div id="profile-avatar"></div>
       <div>
@@ -347,7 +365,7 @@
     <div id="profile-dist"></div>
     <div id="ptt-zone">
       <div id="ptt-label">Walkie‑Talkie<span class="badge-pill badge-free">Free</span></div>
-      <button id="ptt-btn"><span id="ptt-icon">🎙️</span></button>
+      <button id="ptt-btn" aria-label="Hold to talk"><span id="ptt-icon" aria-hidden="true">🎙️</span></button>
       <div id="ptt-wave"></div>
       <div id="ptt-status">Hold to talk</div>
       <div id="ptt-note">Demo mode: this plays your voice back to you (local echo) so you can feel the press‑and‑hold flow. Reaching a real nearby person needs a live backend — phase 2.</div>
@@ -356,7 +374,7 @@
   </div>
 </div>
 
-<div id="paywall-sheet">
+<div id="paywall-sheet" role="dialog" aria-modal="true" aria-label="Text messaging — Premium" inert>
   <div id="paywall-card" class="glass">
     <div class="sheet-title">💬 Text messaging — Premium</div>
     <p>Walkie‑Talkie stays free for everyone, always. Sending text messages is a paid
@@ -370,9 +388,9 @@
 
 <div id="toast" class="glass"></div>
 
-<div id="age-gate">
+<div id="age-gate" role="dialog" aria-modal="true" aria-label="Confirm your age">
   <div id="age-gate-card" class="glass">
-    <div id="age-gate-icon">🔒</div>
+    <div id="age-gate-icon" aria-hidden="true">🔒</div>
     <h2>Confirm your age</h2>
     <p>Hang is for everyone, but a few activity categories (like smoking) aren't shown
       or selectable for accounts under 18. We ask once, up front.</p>
@@ -382,10 +400,10 @@
   </div>
 </div>
 
-<div id="onboard">
+<div id="onboard" role="dialog" aria-modal="true" aria-label="Welcome tour" inert>
   <div id="onboard-card" class="glass">
     <button id="onboard-skip">Skip</button>
-    <div id="onboard-icon"></div>
+    <div id="onboard-icon" aria-hidden="true"></div>
     <div id="onboard-title"></div>
     <div id="onboard-body"></div>
     <div id="onboard-dots"></div>
@@ -395,6 +413,7 @@
     </div>
   </div>
 </div>
+</main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
@@ -408,6 +427,38 @@
    recording back as a local echo — there is no backend yet, so it can't
    reach another real person. That's the next phase, not this one.
    ========================================================================= */
+
+/* ---------- global error boundary: without this, an uncaught error
+   anywhere just leaves a silently frozen screen with nothing telling the
+   user what happened. A static prototype can't recover gracefully from
+   most runtime errors, but it can at least say so instead of going dark. */
+function emergencyToast(msg){
+  try {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  } catch(e){}
+}
+window.addEventListener('error', e => {
+  console.error('Hang runtime error:', e.error || e.message);
+  emergencyToast('Something glitched — try refreshing if things look off');
+});
+window.addEventListener('unhandledrejection', e => {
+  console.error('Hang unhandled rejection:', e.reason);
+  emergencyToast('Something glitched — try refreshing if things look off');
+});
+
+// Leaflet loads from a CDN via a classic <script> tag above. If that
+// fails (offline, CDN down, ad blocker), `L` is undefined and the very
+// next block below would throw immediately, leaving a blank dark screen
+// with zero explanation. Fail loudly and clearly instead.
+if (typeof L === 'undefined') {
+  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;background:#0A0712;color:#F5F3FF;font-family:-apple-system,system-ui,sans-serif;font-size:15px;line-height:1.6;">
+    Hang couldn't load the map library from its CDN — check your connection (or an ad/script blocker) and reload the page.
+  </div>`;
+  throw new Error('Leaflet failed to load from CDN');
+}
 
 const CATEGORIES = [
   { id:"spirituality", label:"Spirituality", icon:"✨", grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)" },
@@ -577,7 +628,11 @@ function tickMovement(){
     const m = peopleMarkers[p.id];
     if (m) {
       m.setLatLng(p.pos);
-      if (p.cat === 'driving') m.setIcon(personIcon(p, sparkedIds.has(p.id))); // refresh heading rotation
+      if (p.cat === 'driving') {
+        m.setIcon(personIcon(p, sparkedIds.has(p.id))); // refresh heading rotation
+        const el = m.getElement(); // setIcon replaces the DOM element, which wipes the aria-label — reapply it
+        if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
+      }
     }
   });
   if (moved) render();
@@ -622,9 +677,15 @@ function tickHotspots(){
 
 /* ---------- map setup ---------- */
 const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16, minZoom:10 }).setView(state.me, 13);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+const tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
   attribution:'&copy; Esri &copy; OpenStreetMap contributors', maxZoom:16
 }).addTo(map);
+let tileErrorShown = false;
+tileLayer.on('tileerror', () => {
+  if (tileErrorShown) return; // don't spam a toast per failed tile — once is enough to inform
+  tileErrorShown = true;
+  emergencyToast('Map tiles failed to load — check your connection');
+});
 
 let radiusCircle = L.circle(state.me, { radius: state.radius*1000, color:'#7FD8E6', weight:1, fillColor:'#7FD8E6', fillOpacity:0.06, id:'radius-circle' }).addTo(map);
 let meMarker = null;
@@ -689,10 +750,14 @@ function renderClusters(visible){
       const m = L.marker([lat,lon], { icon: clusterIcon(members.length, dominantCat) });
       m.on('click', () => map.setView([lat,lon], Math.min(map.getZoom()+3, 16)));
       m.addTo(map);
+      const el = m.getElement();
+      if (el) el.setAttribute('aria-label', `${members.length} ${members.length===1?"person":"people"} nearby, mostly ${dominantCat.label.toLowerCase()} — zoom in`);
       clusterMarkers[key] = m;
     } else {
       clusterMarkers[key].setLatLng([lat,lon]);
-      clusterMarkers[key].setIcon(clusterIcon(members.length, dominantCat));
+      clusterMarkers[key].setIcon(clusterIcon(members.length, dominantCat)); // setIcon wipes aria-label — reapply
+      const el = clusterMarkers[key].getElement();
+      if (el) el.setAttribute('aria-label', `${members.length} ${members.length===1?"person":"people"} nearby, mostly ${dominantCat.label.toLowerCase()} — zoom in`);
     }
   });
 }
@@ -709,6 +774,12 @@ function renderDetail(visible){
       const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
       m.on('click', () => openProfile(p));
       m.addTo(map);
+      // Leaflet's `alt` marker option only becomes an accessible name for
+      // plain image icons, not divIcon markers — set it directly so
+      // screen reader users get more than "button" for each of the 300
+      // simulated people.
+      const el = m.getElement();
+      if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
       peopleMarkers[p.id] = m;
     } else {
       peopleMarkers[p.id].setLatLng(p.pos);
@@ -734,8 +805,15 @@ function renderLandmarks(){
   if (!visible) return;
   (state.landmarks||[]).forEach(l => {
     const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community), interactive: !!l.community, zIndexOffset: l.community ? -100 : -500 });
-    if (l.community) m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
-    landmarkMarkers.push(m.addTo(map));
+    if (l.community) {
+      m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
+      m.addTo(map);
+      const el = m.getElement();
+      if (el) el.setAttribute('aria-label', `${l.label || 'Regular spot'} — people keep gathering here`);
+    } else {
+      m.addTo(map);
+    }
+    landmarkMarkers.push(m);
   });
 }
 function renderHotspots(){
@@ -747,13 +825,18 @@ function renderHotspots(){
   Object.keys(hotspotMarkers).forEach(key => { if (!keep.has(key)) { map.removeLayer(hotspotMarkers[key]); delete hotspotMarkers[key]; } });
   active.forEach(([key, c]) => {
     const pos = [c.lat, c.lon];
+    const label = 'Hot Spot — people keep gathering here';
     if (!hotspotMarkers[key]) {
       const m = L.marker(pos, { icon: hotspotIcon(c.heat), zIndexOffset:-200 });
-      m.on('click', () => showToast(`🔥 Hot Spot — people keep gathering here (${Math.round(c.heat)} heat)`));
+      m.on('click', () => showToast(`🔥 ${label} (${Math.round(c.heat)} heat)`));
       hotspotMarkers[key] = m.addTo(map);
+      const el = m.getElement();
+      if (el) el.setAttribute('aria-label', label);
     } else {
       hotspotMarkers[key].setLatLng(pos);
-      hotspotMarkers[key].setIcon(hotspotIcon(c.heat));
+      hotspotMarkers[key].setIcon(hotspotIcon(c.heat)); // setIcon wipes aria-label — reapply
+      const el = hotspotMarkers[key].getElement();
+      if (el) el.setAttribute('aria-label', label);
     }
   });
 }
@@ -763,7 +846,7 @@ function render(){
   radiusCircle.setLatLng(state.me);
   radiusCircle.setRadius(state.radius*1000);
   // me marker
-  if (!meMarker) meMarker = L.marker(state.me, { icon: meIcon(), zIndexOffset:1000 }).addTo(map);
+  if (!meMarker) meMarker = L.marker(state.me, { icon: meIcon(), zIndexOffset:1000, interactive:false }).addTo(map); // no click handler, so it shouldn't present as an actionable button
   else meMarker.setLatLng(state.me);
 
   // filter + distance
@@ -794,9 +877,14 @@ function renderNearbyStrip(visible){
     const el = document.createElement('div');
     el.className = 'mini-avatar live' + (state.selected && state.selected.id===p.id ? ' selected' : '');
     el.style.background = cat.grad;
-    el.innerHTML = `<span class="ring"></span>${cat.icon}`;
+    el.innerHTML = `<span class="ring" aria-hidden="true"></span><span aria-hidden="true">${cat.icon}</span>`;
     el.title = `${p.name} · ${cat.label}`;
-    el.onclick = () => { map.panTo(p.pos); openProfile(p); };
+    el.setAttribute('role', 'listitem');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-label', `${p.name} — ${cat.label}, open profile`);
+    const activate = () => { map.panTo(p.pos); openProfile(p); };
+    el.onclick = activate;
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } };
     wrap.appendChild(el);
   });
 }
@@ -860,10 +948,10 @@ function renderStatusGrid(){
   });
 }
 const statusSheet = document.getElementById('status-sheet');
-document.getElementById('self-activity-btn').onclick = () => { renderStatusGrid(); statusSheet.classList.add('open'); };
+document.getElementById('self-activity-btn').onclick = () => { renderStatusGrid(); statusSheet.classList.add('open'); statusSheet.removeAttribute('inert'); };
 document.getElementById('status-close').onclick = closeStatusSheet;
 statusSheet.onclick = e => { if (e.target === statusSheet) closeStatusSheet(); };
-function closeStatusSheet(){ statusSheet.classList.remove('open'); }
+function closeStatusSheet(){ statusSheet.classList.remove('open'); statusSheet.setAttribute('inert',''); }
 
 /* ---------- auto-detect travel from real device movement ----------
    Watches real GPS fixes; if sustained speed looks like walking or
@@ -958,11 +1046,13 @@ function openProfile(p){
   const msgBtn = document.getElementById('message-btn');
   msgBtn.innerHTML = state.premiumText ? '💬 Message<span class="badge-pill badge-free">Unlocked</span>' : '💬 Message<span class="badge-pill badge-premium">Premium</span>';
   profileSheet.classList.add('open');
+  profileSheet.removeAttribute('inert');
   const card = document.getElementById('profile-card');
   card.classList.remove('glitch-in'); void card.offsetWidth; card.classList.add('glitch-in');
   render();
 }
-document.getElementById('profile-close').onclick = () => { profileSheet.classList.remove('open'); state.selected=null; render(); };
+function closeProfile(){ profileSheet.classList.remove('open'); profileSheet.setAttribute('inert',''); state.selected=null; render(); }
+document.getElementById('profile-close').onclick = closeProfile;
 
 /* --- push-to-talk: real mic capture, local echo playback --- */
 const pttBtn = document.getElementById('ptt-btn');
@@ -1135,8 +1225,8 @@ function renderOnboard(){
   document.getElementById('onboard-back').style.visibility = obStep === 0 ? 'hidden' : 'visible';
   document.getElementById('onboard-next').textContent = obStep === ONBOARD_STEPS.length - 1 ? "Let's go" : 'Next';
 }
-function openOnboard(){ obStep = 0; renderOnboard(); document.getElementById('onboard').classList.add('open'); }
-function closeOnboard(){ document.getElementById('onboard').classList.remove('open'); try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){} }
+function openOnboard(){ obStep = 0; renderOnboard(); const el = document.getElementById('onboard'); el.classList.add('open'); el.removeAttribute('inert'); }
+function closeOnboard(){ const el = document.getElementById('onboard'); el.classList.remove('open'); el.setAttribute('inert',''); try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){} }
 document.getElementById('onboard-next').onclick = () => {
   if (obStep < ONBOARD_STEPS.length - 1) { obStep++; renderOnboard(); } else { closeOnboard(); }
 };
@@ -1256,8 +1346,8 @@ if (ageKnown) {
 const PREMIUM_KEY = 'hang-premium-text';
 try { state.premiumText = localStorage.getItem(PREMIUM_KEY) === '1'; } catch(e){}
 const paywallSheet = document.getElementById('paywall-sheet');
-function openPaywall(){ paywallSheet.classList.add('open'); }
-function closePaywall(){ paywallSheet.classList.remove('open'); }
+function openPaywall(){ paywallSheet.classList.add('open'); paywallSheet.removeAttribute('inert'); }
+function closePaywall(){ paywallSheet.classList.remove('open'); paywallSheet.setAttribute('inert',''); }
 document.getElementById('message-btn').onclick = () => {
   if (state.premiumText) { showToast('Messaging unlocked — a live chat backend is phase 2, same as cross-device Walkie-Talkie'); return; }
   openPaywall();
@@ -1273,6 +1363,17 @@ document.getElementById('paywall-unlock').onclick = () => {
   showToast('✓ Unlocked (demo) — no real payment was processed');
   beep(520, 760, 0.12);
 };
+
+/* ---------- keyboard: Escape closes whatever dismissible sheet is open,
+   topmost first. The age gate is deliberately excluded — it's a required
+   step, not a dismissible one, so Escape does nothing while it's up. */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (paywallSheet.classList.contains('open')) { closePaywall(); return; }
+  if (statusSheet.classList.contains('open')) { closeStatusSheet(); return; }
+  if (profileSheet.classList.contains('open')) { closeProfile(); return; }
+  if (document.getElementById('onboard').classList.contains('open')) { closeOnboard(); return; }
+});
 </script>
 </body>
 </html>
