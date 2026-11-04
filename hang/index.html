@@ -688,9 +688,21 @@ const CATEGORIES = [
   { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)", portrait:"char-chill.png" },
   { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5], portrait:"char-walking.png" },
   { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
-  { id:"dogwalk",      label:"Dog walk",     icon:"🐕", grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true },
+  { id:"dogwalk",      label:"Dog walk",     icon:"🐕", grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true, portrait:"char-dogwalk.png" },
 ];
 const catById = id => CATEGORIES.find(c => c.id === id);
+// Natural gerund-ish phrasing for the voice briefing — a plain lowercased
+// label reads fine as a status chip ("Eating", "Chill") but not as a
+// sentence ("most of them seem to be doing eating"/"doing chill"). Each
+// entry has to work after both "seem to be ___" and "are ___ right now".
+const ACTIVITY_PHRASE = {
+  spirituality:"into spirituality", prayer:"praying", yoga:"doing yoga",
+  study:"studying", science:"into science", music:"listening to music",
+  workout:"working out", coffee:"grabbing coffee", smoking:"smoking",
+  sleeping:"sleeping", eating:"eating", chill:"chilling", walking:"out for a walk",
+  driving:"driving around", dogwalk:"walking their dogs",
+};
+const activityPhrase = cat => ACTIVITY_PHRASE[cat.id] || cat.label.toLowerCase();
 const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara","Jonas","Rhea","Mateo","Wren","Zara","Oli","Tess","Dev","Luca","Nia","Sam"];
 const RADII = [1,5,10,15,25];
 
@@ -1251,15 +1263,22 @@ function renderNearbyListSheet(){
   body.innerHTML = '';
   sorted.forEach(p => {
     const cat = catById(p.cat);
+    // `role="listitem"` isn't an ARIA-allowed role override on <button> (its
+    // implicit role doesn't permit it — axe flags this exact combination).
+    // The real fix is the standard pattern: a plain listitem wrapper with
+    // the interactive button nested inside it, not forcing a role onto the
+    // button itself.
+    const li = document.createElement('div');
+    li.setAttribute('role', 'listitem');
     const row = document.createElement('button');
     row.className = 'nearby-row' + (sparkedIds.has(p.id) ? ' sparked' : '');
-    row.setAttribute('role', 'listitem');
     row.innerHTML = `<div class="nearby-row-avatar" style="background:${cat.grad}" aria-hidden="true">${cat.icon}</div>
       <div class="nearby-row-meta"><div class="nearby-row-name">${p.name}</div><div class="nearby-row-cat">${cat.label}</div></div>
       <div class="nearby-row-dist">${p._dist < 1 ? Math.round(p._dist*1000)+' m' : p._dist.toFixed(1)+' km'}</div>`;
     row.setAttribute('aria-label', `${p.name} — ${cat.label}, ${p._dist < 1 ? Math.round(p._dist*1000)+' meters' : p._dist.toFixed(1)+' kilometers'} away, open profile`);
     row.onclick = () => { closeNearbyList(); map.panTo(p.pos); openProfile(p); };
-    body.appendChild(row);
+    li.appendChild(row);
+    body.appendChild(li);
   });
 }
 function openNearbyList(){
@@ -1570,7 +1589,7 @@ function generateBriefingLines(){
   } else {
     const dom = dominantNearbyCategory();
     lines.push(pick([`Looks like ${n} ${n===1?'person is':'people are'} nearby.`, `You've got ${n} ${n===1?'person':'people'} around you right now.`]));
-    if (dom && dom.count >= 2) lines.push(pick([`Most of them seem to be doing ${dom.cat.label.toLowerCase()}.`, `A few are into ${dom.cat.label.toLowerCase()} right now.`]));
+    if (dom && dom.count >= 2) lines.push(pick([`Most of them seem to be ${activityPhrase(dom.cat)}.`, `A few are ${activityPhrase(dom.cat)} right now.`]));
   }
   const hotspotNote = nearestHotspotNote();
   if (hotspotNote) lines.push(hotspotNote);
