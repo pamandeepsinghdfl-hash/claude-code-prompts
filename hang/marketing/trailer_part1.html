@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#060910; --cyan:#4ad8ff; --mag:#ff4ad1; --amber:#ffb84a; --dim:#7d8aa0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{width:414px; height:896px; overflow:hidden; background:var(--bg); font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;}
+  #stage{position:relative; width:414px; height:896px; background:
+    radial-gradient(circle at 30% 20%, rgba(74,216,255,0.10), transparent 55%),
+    radial-gradient(circle at 75% 80%, rgba(255,74,209,0.08), transparent 55%),
+    var(--bg);
+  }
+  .scanlines{position:absolute; inset:0; pointer-events:none; opacity:.06;
+    background:repeating-linear-gradient(to bottom, #fff 0px, #fff 1px, transparent 1px, transparent 3px);}
+  .vignette{position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 160px 60px rgba(0,0,0,.65);}
+  .scene{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .5s ease; padding:40px 32px; text-align:center;}
+  .scene.active{opacity:1;}
+  .kicker{font-size:13px; letter-spacing:.3em; color:var(--cyan); text-transform:uppercase; margin-bottom:18px; font-weight:700;}
+  .big{font-size:40px; font-weight:800; color:#fff; line-height:1.15; letter-spacing:-.01em;}
+  .big.glow{text-shadow:0 0 18px rgba(74,216,255,.55), 0 0 40px rgba(74,216,255,.25);}
+  .sub{margin-top:18px; font-size:17px; color:var(--dim); line-height:1.5; max-width:320px;}
+  .pulse-dot{width:8px; height:8px; border-radius:50%; background:var(--cyan); display:inline-block; margin-right:8px;
+    box-shadow:0 0 10px var(--cyan); animation:blink 1.1s infinite;}
+  @keyframes blink{0%,100%{opacity:1} 50%{opacity:.25}}
+
+  .card{width:320px; border:1px solid rgba(255,255,255,.08); border-radius:22px; padding:30px 26px;
+    background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.01));
+    backdrop-filter:blur(2px);}
+  .tag{font-size:11px; letter-spacing:.2em; color:var(--dim); text-transform:uppercase; margin-bottom:14px;}
+  .icon{font-size:56px; margin-bottom:10px; filter:drop-shadow(0 0 16px rgba(255,255,255,.15));}
+  .cat{font-size:22px; font-weight:800; color:#fff; margin-bottom:16px;}
+  .quote{font-size:19px; color:#e9eefb; line-height:1.45; font-weight:500;}
+  .quote::before{content:"\201C"; color:var(--mag); font-size:28px; vertical-align:-6px;}
+  .quote::after{content:"\201D"; color:var(--mag); font-size:28px; vertical-align:-6px;}
+  .block{margin-top:16px; font-size:13px; color:var(--dim);}
+
+  .turn .big{font-size:52px;}
+  .turn .sub{font-size:18px; margin-top:22px;}
+
+  #progress{position:absolute; top:18px; left:24px; right:24px; height:3px; display:flex; gap:5px;}
+  #progress div{flex:1; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden;}
+  #progress div span{display:block; height:100%; width:0%; background:var(--cyan); box-shadow:0 0 6px var(--cyan);}
+  #progress div.done span{width:100%;}
+  #progress div.cur span{animation:fillbar linear forwards;}
+  @keyframes fillbar{from{width:0%} to{width:100%}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="scanlines"></div>
+
+  <div id="progress"></div>
+
+  <div class="scene" id="s0">
+    <div class="kicker"><span class="pulse-dot"></span>HANG · LIVE MAP</div>
+    <div class="big glow">ONE QUESTION.<br>ZERO FILTERS.</div>
+    <div class="sub">What are you <em>actually</em> doing right now &mdash; would you want the world to know?</div>
+  </div>
+
+  <div class="scene" id="s1">
+    <div class="card">
+      <div class="tag">Stranger &middot; Park bench</div>
+      <div class="icon">&#128214;</div>
+      <div class="cat">Study</div>
+      <div class="quote">Honestly? Cramming for a final I should've started last week.</div>
+      <div class="block">Drop the pin? &mdash; "Maybe somebody else is suffering with me."</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s2">
+    <div class="card">
+      <div class="tag">Stranger &middot; Studio sidewalk</div>
+      <div class="icon">&#129497;</div>
+      <div class="cat">Yoga</div>
+      <div class="quote">Just finished a class, mat's still in my bag.</div>
+      <div class="block">Drop the pin? &mdash; "Only for my people, not randoms."</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="card">
+      <div class="tag">Stranger &middot; Park bench, eyes closed</div>
+      <div class="icon">&#128591;</div>
+      <div class="cat">Spirituality</div>
+      <div class="quote">Five minutes of quiet before the day gets loud.</div>
+      <div class="block">Drop the pin? &mdash; "Sure. Maybe someone else needs five minutes too."</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="card">
+      <div class="tag">Stranger &middot; Outside the office</div>
+      <div class="icon">&#128684;</div>
+      <div class="cat">Smoking</div>
+      <div class="quote">Taking five. Don't tell my mom.</div>
+      <div class="block">Drop the pin? &mdash; "Why not, at least it's honest."</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s5">
+    <div class="card">
+      <div class="tag">Strangers &middot; Two coffee cups, laughing</div>
+      <div class="icon">&#9749;</div>
+      <div class="cat">Coffee / Chill</div>
+      <div class="quote">Nothing. Absolutely nothing. And it's great.</div>
+      <div class="block">Drop the pin? &mdash; "Drop ten. We're always here."</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s6">
+    <div class="card">
+      <div class="tag">Stranger &middot; Telescope app open</div>
+      <div class="icon">&#128301;</div>
+      <div class="cat">Science</div>
+      <div class="quote">Trying to catch a meteor shower later, not even kidding.</div>
+      <div class="block">Drop the pin? &mdash; "That's a story I want people to stumble into."</div>
+    </div>
+  </div>
+
+  <div class="scene turn" id="s7">
+    <div class="kicker">THE TURN</div>
+    <div class="big glow">That's Hang.</div>
+    <div class="sub">You pick what you're doing.<br>You pick who sees it.<br>You pick how close.</div>
+  </div>
+
+  <div class="vignette"></div>
+</div>
+<script>
+  const scenes = ['s0','s1','s2','s3','s4','s5','s6','s7'];
+  const durations = [4200, 4300, 4300, 4300, 4300, 4300, 4300, 4200]; // ms per scene
+  const prog = document.getElementById('progress');
+  scenes.forEach(()=>{ const d=document.createElement('div'); const s=document.createElement('span'); d.appendChild(s); prog.appendChild(d); });
+  const bars = prog.children;
+
+  let i = 0;
+  function show(idx){
+    scenes.forEach((id,k)=>{
+      document.getElementById(id).classList.toggle('active', k===idx);
+      bars[k].classList.toggle('done', k<idx);
+      bars[k].classList.toggle('cur', k===idx);
+      if (k===idx) bars[k].querySelector('span').style.animationDuration = durations[idx]+'ms';
+    });
+  }
+  function next(){
+    show(i);
+    if (i < scenes.length-1){
+      setTimeout(()=>{ i++; next(); }, durations[i]);
+    } else {
+      window.__done = true;
+    }
+  }
+  next();
+</script>
+</body>
+</html>
