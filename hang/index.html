@@ -3,29 +3,38 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<meta name="theme-color" content="#07080C" />
+<meta name="theme-color" content="#0A0712" />
 <title>Hang — concept demo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
   :root{
-    --bg:#07080C; --panel:rgba(22,24,34,0.72); --panel-strong:rgba(22,24,34,0.92);
-    --line:rgba(255,255,255,0.12); --text:#F2F4FA; --muted:#9AA3B8; --faint:#5C6479;
-    --accent:#7FD8E6; --accent2:#A99CF5; --warn:#F0C57C; --danger:#E86A6A;
+    /* 2026 refresh: warm-tuned near-black instead of flat navy, a signature
+       three-stop "aurora" brand gradient used for CTAs/branding (gradients
+       now carry branding weight rather than living only in backgrounds),
+       and "Liquid Glass"-style panels — more translucent, with a specular
+       top-edge highlight instead of a flat tint. Sourced research behind
+       these choices: hang/marketing/theme-notes.md */
+    --bg:#0A0712; --panel:rgba(26,22,40,0.62); --panel-strong:rgba(26,22,40,0.88);
+    --line:rgba(255,255,255,0.14); --text:#F5F3FF; --muted:#A8A2C2; --faint:#655D85;
+    --accent:#7FD8E6; --accent2:#C9A9FF; --warn:#F0C57C; --danger:#E86A6A;
+    --brand-gradient: linear-gradient(135deg, #6EE7F0 0%, #A99CF5 55%, #FF8FD6 100%);
+    --accent-tint: rgba(127,216,230,0.14);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
+  html,body{margin:0;padding:0;height:100%;background:radial-gradient(ellipse 120% 70% at 20% 0%, rgba(110,231,240,0.10), transparent 55%), radial-gradient(ellipse 120% 70% at 85% 100%, rgba(255,143,214,0.08), transparent 55%), var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
   #map{position:absolute;inset:0;z-index:0;background:#0b0d14}
-  .leaflet-tile-pane{filter:saturate(1.6) contrast(1.12) brightness(0.78) hue-rotate(-6deg)}
+  .leaflet-tile-pane{filter:saturate(1.65) contrast(1.12) brightness(0.78) hue-rotate(-10deg)}
   .leaflet-control-attribution{background:rgba(0,0,0,0.4)!important;color:var(--faint)!important;font-size:9px!important}
   .leaflet-control-attribution a{color:var(--muted)!important}
   .leaflet-control-zoom{display:none}
 
-  .glass{background:var(--panel);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)}
+  .glass{background:var(--panel);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.3)}
 
   /* ---------- top bar ---------- */
   #topbar{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:14px;right:14px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
   #logo{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px}
-  #logo b{font-size:15px;font-weight:800;letter-spacing:0.04em;background:linear-gradient(135deg,#9BE7F2,#C9BFFB);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #logo b{font-size:15px;font-weight:800;letter-spacing:0.04em;background:var(--brand-gradient);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brand-shimmer 7s ease-in-out infinite}
+  @keyframes brand-shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
   #logo .dot{width:7px;height:7px;border-radius:50%;background:#7FE0A8;box-shadow:0 0 8px #7FE0A8;animation:pulse-dot 1.6s ease-in-out infinite}
   @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
 
@@ -44,14 +53,14 @@
   #radius-wrap{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 68px);transform:translateX(-50%);z-index:29;pointer-events:none}
   #radius-control{pointer-events:auto;display:flex;gap:3px;padding:4px;border-radius:999px}
   #radius-control button{all:unset;cursor:pointer;padding:7px 13px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted);transition:background .18s ease,color .18s ease}
-  #radius-control button.active{background:rgba(255,255,255,0.14);color:var(--text)}
+  #radius-control button.active{background:var(--accent-tint);color:var(--text);box-shadow:inset 0 0 0 1px rgba(127,216,230,0.35)}
 
   /* ---------- category filter ---------- */
   #filters{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:29;display:flex;justify-content:center;pointer-events:none}
   #filter-row{pointer-events:auto;display:flex;gap:7px;padding:9px 11px;border-radius:999px;overflow-x:auto;max-width:92vw;scrollbar-width:none}
   #filter-row::-webkit-scrollbar{display:none}
   .chip{all:unset;flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;transition:all .18s ease;white-space:nowrap}
-  .chip.active{background:rgba(255,255,255,0.14);color:var(--text);border-color:rgba(255,255,255,0.22)}
+  .chip.active{background:var(--accent-tint);color:var(--text);border-color:rgba(127,216,230,0.35)}
   .chip .ic{font-size:14px}
 
   /* ---------- bottom nav / self ---------- */
@@ -61,7 +70,7 @@
   #self-meta{flex:1;min-width:0}
   #self-meta .name{font-size:13px;font-weight:700}
   #self-meta .status{font-size:10.5px;color:var(--muted)}
-  #self-activity-btn{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6);padding:8px 14px;border-radius:999px;white-space:nowrap}
+  #self-activity-btn{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:#0A1014;background:var(--brand-gradient);padding:8px 14px;border-radius:999px;white-space:nowrap}
   #auto-toggle{all:unset;cursor:pointer;font-size:10.5px;font-weight:600;color:var(--faint);padding:7px 10px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);transition:all .2s ease}
   #auto-toggle.on{color:var(--accent);border-color:rgba(127,216,230,0.4);background:rgba(127,216,230,0.1)}
 
@@ -94,7 +103,7 @@
   #onboard-dots span:not(.active){width:6px}
   #onboard-actions{display:flex;gap:8px}
   #onboard-back{all:unset;padding:13px 18px;border-radius:14px;cursor:pointer;color:var(--muted);border:1px solid var(--line);font-size:13.5px}
-  #onboard-next{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6)}
+  #onboard-next{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:var(--brand-gradient)}
 
   /* ---------- age gate: shown once, before anything else, so content
      restrictions apply from the very first frame. Self-reported birthdate
@@ -107,7 +116,7 @@
   #age-gate-card h2{font-size:19px;font-weight:700;margin-bottom:8px}
   #age-gate-card p{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:18px}
   #age-gate-dob{all:unset;width:100%;box-sizing:border-box;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,0.05);color:var(--text);font-size:14px;text-align:center;margin-bottom:14px}
-  #age-gate-submit{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6)}
+  #age-gate-submit{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:var(--brand-gradient)}
   #age-gate-submit:disabled{opacity:.45;cursor:default}
   #age-gate-fine{font-size:10.5px;color:var(--faint);line-height:1.6;margin-top:14px}
 
@@ -261,7 +270,7 @@
 
   @media (prefers-reduced-motion: reduce){#radar-sweep::after,.radar-ring,#profile-card.glitch-in,.spark-line{animation:none!important}}
 
-  @media (prefers-reduced-motion: reduce){.avatar3d,.shadow,.ring,.radar,#ptt-btn.live,.dot{animation:none!important}}
+  @media (prefers-reduced-motion: reduce){.avatar3d,.shadow,.ring,.radar,#ptt-btn.live,.dot,#logo b{animation:none!important}}
 </style>
 </head>
 <body>
