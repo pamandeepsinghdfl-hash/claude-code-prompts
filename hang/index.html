@@ -611,6 +611,7 @@ function tickHotspots(){
     if (c.heat >= COMMUNITY_THRESHOLD && !c.spawned) {
       c.spawned = true;
       state.landmarks.push({ id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+      landmarksDirty = true;
       showToast('🏕️ A regular hangout spot just formed nearby — people keep showing up');
     }
   });
@@ -714,10 +715,23 @@ function renderDetail(visible){
     }
   });
 }
+// Landmarks are near-static (new ones only appear when a hot spot gets
+// promoted — see tickHotspots). render() calls renderLandmarks() every
+// second via tickMovement, plus on every zoom/pan, so tearing down and
+// rebuilding every marker on every single call was pure waste — profiled
+// at ~45% of render()'s total cost for work that almost never needs to
+// happen. Now it only does that work when something actually changed:
+// the list of landmarks, or whether they should be visible at this zoom.
+let landmarksDirty = true;
+let lastLandmarksVisible = null;
 function renderLandmarks(){
+  const visible = map.getZoom() >= 13; // decluttered when zoomed out, same as the GTA-style LOD for people
+  if (!landmarksDirty && visible === lastLandmarksVisible) return; // nothing changed — skip the rebuild
+  landmarksDirty = false;
+  lastLandmarksVisible = visible;
   landmarkMarkers.forEach(m => map.removeLayer(m));
   landmarkMarkers = [];
-  if (map.getZoom() < 13) return; // decluttered when zoomed out, same as the GTA-style LOD for people
+  if (!visible) return;
   (state.landmarks||[]).forEach(l => {
     const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community), interactive: !!l.community, zIndexOffset: l.community ? -100 : -500 });
     if (l.community) m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
