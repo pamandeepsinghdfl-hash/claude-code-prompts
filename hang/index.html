@@ -193,6 +193,9 @@
   #paywall-close-btn{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:11px 0;color:var(--faint);font-size:12.5px;cursor:pointer}
   #paywall-fine{font-size:10px;color:var(--faint);margin-top:14px;line-height:1.6}
   #help-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;font-weight:700;border:1px solid var(--line)}
+  #voice-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;border:1px solid var(--line)}
+  #voice-btn.speaking{color:var(--accent);animation:voice-pulse 1.1s ease-in-out infinite}
+  @keyframes voice-pulse{0%,100%{box-shadow:0 0 0 0 rgba(127,216,230,0.4)}50%{box-shadow:0 0 0 6px rgba(127,216,230,0)}}
 
   /* ---------- profile sheet ---------- */
   #profile-sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.9,.3,1.1)}
@@ -386,6 +389,7 @@
     <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
     <button id="help-btn" class="glass" aria-label="Show tutorial">?</button>
     <button id="weather-toggle" class="glass" aria-label="Toggle weather">☀️</button>
+    <button id="voice-btn" class="glass" aria-label="Hear your briefing">🔊</button>
   </div>
   <div id="nearby-strip">
     <button id="nearby-count" class="glass" aria-label="Browse nearby people">— nearby</button>
@@ -1228,6 +1232,80 @@ document.getElementById('weather-toggle').onclick = () => {
   showToast(`Weather: ${next}`);
 };
 
+/* ---------- voice briefing: a genuine on-device spoken summary, via the
+   browser's real Web Speech API (speechSynthesis) — no backend, no "AI"
+   actually composing anything. The text is built with plain rules from
+   real current state (nearby count, what people are actually doing,
+   any hot spot forming/promoted nearby, the weather toggle) — it only
+   sounds smart because the data under it is real, not because anything
+   here is intelligent. Browsers restrict unprompted audio, so this is
+   attempted automatically right after a real tap (closing onboarding,
+   or shortly after boot for returning users) and always replayable via
+   the speaker button, which works regardless of autoplay rules. */
+function timeOfDayGreeting(){
+  const h = new Date().getHours();
+  if (h>=5 && h<12) return 'Good morning';
+  if (h>=12 && h<17) return 'Good afternoon';
+  if (h>=17 && h<22) return 'Good evening';
+  return "You're up late";
+}
+function dominantNearbyCategory(){
+  if (!lastVisiblePeople.length) return null;
+  const counts = {};
+  lastVisiblePeople.forEach(p => { counts[p.cat] = (counts[p.cat]||0) + 1; });
+  const [catId, n] = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  return { cat: catById(catId), count: n };
+}
+function nearestHotspotNote(){
+  const cells = Object.values(hotspotCells);
+  const forming = cells.find(c => !c.spawned && c.heat >= BUILDING_THRESHOLD);
+  if (forming) return "There's a spot nearby where people keep gathering — it's about to become a real landmark.";
+  const active = cells.find(c => !c.spawned && c.heat >= HOTSPOT_THRESHOLD);
+  if (active) return "There's a hot spot forming near you right now.";
+  return null;
+}
+function generateBriefing(){
+  const parts = [];
+  parts.push(`${timeOfDayGreeting()}.`);
+  const n = lastVisiblePeople.length;
+  if (n === 0) {
+    parts.push("It's quiet around you right now — nobody's showing up within your radius.");
+  } else {
+    const dom = dominantNearbyCategory();
+    parts.push(`${n} ${n===1?'person is':'people are'} nearby.`);
+    if (dom && dom.count >= 2) parts.push(`Most of them are doing ${dom.cat.label.toLowerCase()}.`);
+  }
+  const hotspotNote = nearestHotspotNote();
+  if (hotspotNote) parts.push(hotspotNote);
+  if (weatherMode === 'rain') parts.push("It's raining on the map right now, if that changes your plans.");
+  if (weatherMode === 'snow') parts.push("Snow's falling on the map — stay cozy.");
+  const myCat = catById(state.status);
+  parts.push(n > 0
+    ? `You're currently set to ${myCat.label.toLowerCase()}. Want to see who's around, or try something new today?`
+    : `You're currently set to ${myCat.label.toLowerCase()}. Set a status and see who shows up.`);
+  return parts.join(' ');
+}
+let currentUtterance = null;
+function speakBriefing(){
+  if (!('speechSynthesis' in window)) { showToast("This browser doesn't support spoken voice"); return; }
+  const btn = document.getElementById('voice-btn');
+  if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (btn) btn.classList.remove('speaking'); return; }
+  const text = generateBriefing();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 1.0; utter.pitch = 1.0;
+  utter.onstart = () => { if (btn) btn.classList.add('speaking'); };
+  utter.onend = utter.onerror = () => { if (btn) btn.classList.remove('speaking'); };
+  currentUtterance = utter; // keep a reference — some browsers garbage-collect and silently drop utterances otherwise
+  try { window.speechSynthesis.speak(utter); } catch(e){}
+}
+document.getElementById('voice-btn').onclick = speakBriefing;
+function tryAutoBriefing(){
+  // Best-effort only: browsers vary on whether this counts as having a
+  // real user gesture behind it, so this can silently do nothing — the
+  // speaker button is the reliable path, not this.
+  try { speakBriefing(); } catch(e){}
+}
+
 /* ---------- profile sheet + walkie-talkie ---------- */
 const profileSheet = document.getElementById('profile-sheet');
 function openProfile(p){
@@ -1421,7 +1499,12 @@ function renderOnboard(){
   document.getElementById('onboard-next').textContent = obStep === ONBOARD_STEPS.length - 1 ? "Let's go" : 'Next';
 }
 function openOnboard(){ obStep = 0; renderOnboard(); const el = document.getElementById('onboard'); el.classList.add('open'); el.removeAttribute('inert'); }
-function closeOnboard(){ const el = document.getElementById('onboard'); el.classList.remove('open'); el.setAttribute('inert',''); try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){} }
+function closeOnboard(){
+  const el = document.getElementById('onboard');
+  el.classList.remove('open'); el.setAttribute('inert','');
+  try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
+  setTimeout(tryAutoBriefing, 500); // closing onboarding is a real tap — the one reliable place to greet a first-time user
+}
 document.getElementById('onboard-next').onclick = () => {
   if (obStep < ONBOARD_STEPS.length - 1) { obStep++; renderOnboard(); } else { closeOnboard(); }
 };
@@ -1481,7 +1564,7 @@ function boot(center){
   setWeather('clear');
   let seenBefore = false;
   try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
-  if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
+  if (!seenBefore) openOnboard(); else { setTimeout(checkSparks, 1200); setTimeout(tryAutoBriefing, 900); }
   setInterval(checkSparks, 6500);
   setInterval(tickMovement, 1000);
   setInterval(tickHotspots, 4000);
