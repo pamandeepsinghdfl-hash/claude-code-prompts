@@ -95,6 +95,45 @@
   #onboard-actions{display:flex;gap:8px}
   #onboard-back{all:unset;padding:13px 18px;border-radius:14px;cursor:pointer;color:var(--muted);border:1px solid var(--line);font-size:13.5px}
   #onboard-next{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6)}
+
+  /* ---------- age gate: shown once, before anything else, so content
+     restrictions apply from the very first frame. Self-reported birthdate
+     is the same baseline most consumer apps use (Instagram, TikTok, etc.)
+     — real document-based ID verification needs a third-party KYC vendor
+     and is out of scope for a static prototype; we say so, not fake it. */
+  #age-gate{position:fixed;inset:0;z-index:99;background:rgba(5,6,10,0.94);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:22px}
+  #age-gate-card{width:100%;max-width:380px;border-radius:24px;padding:30px 24px 24px;text-align:center}
+  #age-gate-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 18px;background:rgba(127,216,230,0.14);border:1px solid rgba(127,216,230,0.4)}
+  #age-gate-card h2{font-size:19px;font-weight:700;margin-bottom:8px}
+  #age-gate-card p{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:18px}
+  #age-gate-dob{all:unset;width:100%;box-sizing:border-box;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,0.05);color:var(--text);font-size:14px;text-align:center;margin-bottom:14px}
+  #age-gate-submit{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#0A1014;background:linear-gradient(135deg,#9BE7F2,#7FD8E6)}
+  #age-gate-submit:disabled{opacity:.45;cursor:default}
+  #age-gate-fine{font-size:10.5px;color:var(--faint);line-height:1.6;margin-top:14px}
+
+  /* ---------- locked status option (under-18 content restriction) ---------- */
+  .status-opt.locked{opacity:.4;cursor:default;position:relative}
+  .status-opt.locked .lock-tag{position:absolute;top:4px;right:6px;font-size:10px}
+
+  /* ---------- Von Restorff isolation badges: FREE (trust/positive, cool
+     color) vs PREMIUM (value/aspirational, warm gold) — deliberately the
+     "odd one out" against the rest of the HUD palette so they're read at a
+     glance, per the isolation-effect research applied across this pass. */
+  .badge-pill{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;vertical-align:middle;margin-left:7px}
+  .badge-free{color:#06201c;background:linear-gradient(135deg,#8CF2D0,#4CD9A8);box-shadow:0 0 10px rgba(76,217,168,.45)}
+  .badge-premium{color:#2a1a04;background:linear-gradient(135deg,#FFD88A,#F0A94E);box-shadow:0 0 10px rgba(240,169,78,.45)}
+
+  /* ---------- text-message paywall sheet (reuses the status-sheet pattern) ---------- */
+  #message-btn{all:unset;cursor:pointer;margin-top:12px;padding:11px 20px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,0.04);font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
+  #paywall-sheet{position:fixed;inset:0;z-index:65;background:rgba(5,6,10,0.72);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease}
+  #paywall-sheet.open{opacity:1;pointer-events:auto}
+  #paywall-card{width:100%;max-width:420px;border-radius:26px 26px 0 0;padding:26px 22px calc(env(safe-area-inset-bottom) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1);text-align:center}
+  #paywall-sheet.open #paywall-card{transform:translateY(0)}
+  #paywall-card .sheet-title{margin-bottom:8px}
+  #paywall-card p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+  #paywall-unlock{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px 0;border-radius:14px;cursor:pointer;font-weight:700;font-size:14px;color:#2a1a04;background:linear-gradient(135deg,#FFD88A,#F0A94E);margin-bottom:10px}
+  #paywall-close-btn{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:11px 0;color:var(--faint);font-size:12.5px;cursor:pointer}
+  #paywall-fine{font-size:10px;color:var(--faint);margin-top:14px;line-height:1.6}
   #help-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;font-weight:700;border:1px solid var(--line)}
 
   /* ---------- profile sheet ---------- */
@@ -291,16 +330,41 @@
     </div>
     <div id="profile-dist"></div>
     <div id="ptt-zone">
-      <div id="ptt-label">Walkie‑Talkie</div>
+      <div id="ptt-label">Walkie‑Talkie<span class="badge-pill badge-free">Free</span></div>
       <button id="ptt-btn"><span id="ptt-icon">🎙️</span></button>
       <div id="ptt-wave"></div>
       <div id="ptt-status">Hold to talk</div>
       <div id="ptt-note">Demo mode: this plays your voice back to you (local echo) so you can feel the press‑and‑hold flow. Reaching a real nearby person needs a live backend — phase 2.</div>
+      <button id="message-btn">💬 Message<span class="badge-pill badge-premium">Premium</span></button>
     </div>
   </div>
 </div>
 
+<div id="paywall-sheet">
+  <div id="paywall-card" class="glass">
+    <div class="sheet-title">💬 Text messaging — Premium</div>
+    <p>Walkie‑Talkie stays free for everyone, always. Sending text messages is a paid
+      feature, since it's the one thing here that invites endless scrolling instead
+      of actually meeting up.</p>
+    <button id="paywall-unlock">Unlock texting — demo</button>
+    <button id="paywall-close-btn">Not now</button>
+    <div id="paywall-fine">This prototype has no real payment processor — "Unlock" just previews the flow. A live app would need a real billing provider wired in before this goes anywhere near launch.</div>
+  </div>
+</div>
+
 <div id="toast" class="glass"></div>
+
+<div id="age-gate">
+  <div id="age-gate-card" class="glass">
+    <div id="age-gate-icon">🔒</div>
+    <h2>Confirm your age</h2>
+    <p>Hang is for everyone, but a few activity categories (like smoking) aren't shown
+      or selectable for accounts under 18. We ask once, up front.</p>
+    <input type="date" id="age-gate-dob" aria-label="Date of birth">
+    <button id="age-gate-submit" disabled>Continue</button>
+    <div id="age-gate-fine">This is a self-reported birthdate, the same baseline most consumer apps start with — not document-based ID verification. A real launch would add a third-party identity-verification provider before this ships.</div>
+  </div>
+</div>
 
 <div id="onboard">
   <div id="onboard-card" class="glass">
@@ -338,7 +402,7 @@ const CATEGORIES = [
   { id:"music",        label:"Music",        icon:"🎧", grad:"linear-gradient(135deg,#F7A6C4,#E0608F)" },
   { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)" },
   { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)" },
-  { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)" },
+  { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)", ageRestricted:true },
   { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)" },
   { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5]  },
   { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
@@ -348,7 +412,7 @@ const catById = id => CATEGORIES.find(c => c.id === id);
 const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara","Jonas","Rhea","Mateo","Wren","Zara","Oli","Tess","Dev","Luca","Nia","Sam"];
 const RADII = [1,5,10,15,25];
 
-const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null, autoDetect:true };
+const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null, autoDetect:true, isMinor:null, premiumText:false };
 const sparkedIds = new Set();
 let sparkLine = null;
 
@@ -662,6 +726,7 @@ function render(){
     p._dist = d;
     if (d > state.radius) return false;
     if (state.activeFilters.size && !state.activeFilters.has(p.cat)) return false;
+    if (state.isMinor && catById(p.cat).ageRestricted) return false;
     return true;
   });
 
@@ -695,6 +760,7 @@ function renderFilters(){
   const row = document.getElementById('filter-row');
   row.innerHTML = '';
   CATEGORIES.forEach(c => {
+    if (c.ageRestricted && state.isMinor) return; // not shown as a filter option for minor accounts
     const chip = document.createElement('button');
     chip.className = 'chip' + (state.activeFilters.has(c.id) ? ' active' : '');
     chip.innerHTML = `<span class="ic">${c.icon}</span>${c.label}`;
@@ -735,10 +801,13 @@ function renderStatusGrid(){
   const grid = document.getElementById('status-grid');
   grid.innerHTML = '';
   CATEGORIES.forEach(c => {
+    const locked = !!(c.ageRestricted && state.isMinor);
     const opt = document.createElement('button');
-    opt.className = 'status-opt' + (state.status===c.id ? ' active' : '');
-    opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>`;
-    opt.onclick = () => { setStatus(c.id, false); closeStatusSheet(); };
+    opt.className = 'status-opt' + (state.status===c.id ? ' active' : '') + (locked ? ' locked' : '');
+    opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>${locked ? '<span class="lock-tag">🔒</span>' : ''}`;
+    opt.onclick = locked
+      ? () => showToast('Not available for accounts under 18')
+      : () => { setStatus(c.id, false); closeStatusSheet(); };
     grid.appendChild(opt);
   });
 }
@@ -837,6 +906,8 @@ function openProfile(p){
   document.getElementById('profile-name').textContent = p.name;
   document.getElementById('profile-sub').textContent = `Right now: ${cat.label}`;
   document.getElementById('profile-dist').textContent = `${p._dist.toFixed(1)} km away`;
+  const msgBtn = document.getElementById('message-btn');
+  msgBtn.innerHTML = state.premiumText ? '💬 Message<span class="badge-pill badge-free">Unlocked</span>' : '💬 Message<span class="badge-pill badge-premium">Premium</span>';
   profileSheet.classList.add('open');
   const card = document.getElementById('profile-card');
   card.classList.remove('glitch-in'); void card.offsetWidth; card.classList.add('glitch-in');
@@ -1063,15 +1134,75 @@ function boot(center){
   }
 }
 document.getElementById('auto-toggle').onclick = toggleAutoDetect;
-if (navigator.geolocation){
-  navigator.geolocation.getCurrentPosition(
-    pos => boot([pos.coords.latitude, pos.coords.longitude]),
-    () => { boot(state.me); showToast('Using a sample location — location access was denied'); },
-    { timeout:4000 }
-  );
-} else {
-  boot(state.me);
+function startApp(){
+  if (navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos => boot([pos.coords.latitude, pos.coords.longitude]),
+      () => { boot(state.me); showToast('Using a sample location — location access was denied'); },
+      { timeout:4000 }
+    );
+  } else {
+    boot(state.me);
+  }
 }
+
+/* ---------- age gate: self-reported birthdate, asked once, before the
+   app starts, so content restrictions (see CATEGORIES.ageRestricted) are
+   in effect from the very first render. Real document-based ID
+   verification would need a third-party KYC provider — not something a
+   static prototype can honestly claim to do. ---------- */
+const AGE_GATE_KEY = 'hang-age-gate-v1';
+const dobInput = document.getElementById('age-gate-dob');
+const ageSubmitBtn = document.getElementById('age-gate-submit');
+dobInput.addEventListener('input', () => { ageSubmitBtn.disabled = !dobInput.value; });
+ageSubmitBtn.onclick = () => {
+  const dob = new Date(dobInput.value);
+  if (isNaN(dob.getTime())) return;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const notYetBirthday = (now.getMonth() < dob.getMonth()) || (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate());
+  if (notYetBirthday) age--;
+  state.isMinor = age < 18;
+  try { localStorage.setItem(AGE_GATE_KEY, JSON.stringify({ isMinor: state.isMinor, ts: Date.now() })); } catch(e){}
+  document.getElementById('age-gate').style.display = 'none';
+  showToast(state.isMinor ? "You're all set — some categories are hidden for your account" : "You're all set 🎉");
+  startApp();
+};
+let ageKnown = false;
+try {
+  const saved = JSON.parse(localStorage.getItem(AGE_GATE_KEY) || 'null');
+  if (saved && typeof saved.isMinor === 'boolean') { state.isMinor = saved.isMinor; ageKnown = true; }
+} catch(e){}
+if (ageKnown) {
+  document.getElementById('age-gate').style.display = 'none';
+  startApp();
+} else {
+  document.getElementById('age-gate').style.display = 'flex';
+}
+
+/* ---------- text-message paywall (UI/UX flow only — no real payment
+   processor exists in this prototype, and "Unlock" doesn't pretend to
+   charge anyone; Walkie-Talkie is, and stays, free). ---------- */
+const PREMIUM_KEY = 'hang-premium-text';
+try { state.premiumText = localStorage.getItem(PREMIUM_KEY) === '1'; } catch(e){}
+const paywallSheet = document.getElementById('paywall-sheet');
+function openPaywall(){ paywallSheet.classList.add('open'); }
+function closePaywall(){ paywallSheet.classList.remove('open'); }
+document.getElementById('message-btn').onclick = () => {
+  if (state.premiumText) { showToast('Messaging unlocked — a live chat backend is phase 2, same as cross-device Walkie-Talkie'); return; }
+  openPaywall();
+};
+document.getElementById('paywall-close-btn').onclick = closePaywall;
+paywallSheet.onclick = e => { if (e.target === paywallSheet) closePaywall(); };
+document.getElementById('paywall-unlock').onclick = () => {
+  state.premiumText = true;
+  try { localStorage.setItem(PREMIUM_KEY, '1'); } catch(e){}
+  closePaywall();
+  const msgBtn = document.getElementById('message-btn');
+  msgBtn.innerHTML = '💬 Message<span class="badge-pill badge-free">Unlocked</span>';
+  showToast('✓ Unlocked (demo) — no real payment was processed');
+  beep(520, 760, 0.12);
+};
 </script>
 </body>
 </html>
