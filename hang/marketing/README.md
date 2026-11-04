@@ -1,5 +1,7 @@
 # Hang — marketing assets
 
+- `theme-notes.md` — sourced 2026 UI design-trend research (dark-mode tuning, "Liquid
+  Glass" panel treatment, gradient-as-branding) behind the app's theme refresh.
 - `design-psychology-notes.md` — sourced UX/cognitive-psychology research (not medical
   literature — see the doc's own note on that) behind the Free/Premium badge styling,
   CTA sizing/placement, and the age-gate's closing moment in the app itself.
