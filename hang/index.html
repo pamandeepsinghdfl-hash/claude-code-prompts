@@ -64,14 +64,18 @@
 
   #nearby-strip{pointer-events:auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
   #nearby-count{font-size:10.5px;letter-spacing:0.08em;color:var(--muted);padding:5px 11px;border-radius:999px}
-  #nearby-avatars{display:flex;gap:7px;padding:7px;border-radius:20px;max-width:46vw;overflow-x:auto;scrollbar-width:none}
+  #nearby-avatars{display:flex;gap:14px;padding:7px;border-radius:20px;max-width:46vw;overflow-x:auto;scrollbar-width:none}
   #nearby-avatars::-webkit-scrollbar{display:none}
   .mini-avatar{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);transition:transform .15s ease,border-color .2s ease}
   .mini-avatar:active{transform:scale(0.9)}
   .mini-avatar.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,216,230,0.3)}
-  .mini-avatar .ring{position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--accent);opacity:0;animation:none}
+  .mini-avatar .ring{position:absolute;inset:-2px;border-radius:50%;border:1.5px solid var(--accent);opacity:0;animation:none}
   .mini-avatar.live .ring{opacity:0.8;animation:ring-pulse 1.8s ease-out infinite}
-  @keyframes ring-pulse{0%{transform:scale(0.85);opacity:0.8}100%{transform:scale(1.35);opacity:0}}
+  /* was scaling up to 1.35x with only 7px between avatars — adjacent
+     pulsing rings bled into and visually painted over each other
+     ("icons overriding each other"). Tightened the pulse and paired it
+     with the larger gap above so neighboring rings never touch. */
+  @keyframes ring-pulse{0%{transform:scale(0.85);opacity:0.8}100%{transform:scale(1.18);opacity:0}}
 
   /* ---------- radius control ---------- */
   #radius-wrap{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 68px);transform:translateX(-50%);z-index:29;pointer-events:none}
@@ -1041,6 +1045,14 @@ function closeStatusSheet(){ statusSheet.classList.remove('open'); statusSheet.s
    sheet always wins until your speed changes again. */
 let lastGeoFix = null;
 const autoSpeedSamples = [];
+// The map's viewport never followed real GPS updates — only the radius
+// circle, "you are here" marker, and distance-based filtering did.
+// Someone actually walking with the app open would watch themselves (and
+// everyone correctly computed as "nearby") drift toward and past the edge
+// of a viewport that was frozen wherever the app happened to boot.
+// Auto-follows like a real map/nav app, with a manual-override escape
+// hatch: a real user drag suspends it until Auto is toggled back on.
+let userPannedAway = false;
 function handleGeoAuto(pos){
   const now = Date.now();
   const newPos = [pos.coords.latitude, pos.coords.longitude];
@@ -1051,6 +1063,7 @@ function handleGeoAuto(pos){
   }
   lastGeoFix = { pos: newPos, t: now };
   state.me = newPos;
+  if (state.autoDetect && !userPannedAway) map.panTo(newPos, { animate:true });
   if (speedKmh != null && state.autoDetect) {
     autoSpeedSamples.push(speedKmh);
     if (autoSpeedSamples.length > 4) autoSpeedSamples.shift();
@@ -1066,8 +1079,9 @@ function toggleAutoDetect(){
   state.autoDetect = !state.autoDetect;
   const btn = document.getElementById('auto-toggle');
   if (btn) { btn.classList.toggle('on', state.autoDetect); btn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
-  showToast(state.autoDetect ? 'Auto-detecting travel from movement' : 'Auto-detect off — status stays manual');
+  showToast(state.autoDetect ? 'Auto-detecting travel from movement — map will follow you' : 'Auto-detect off — status stays manual, map stays put');
   if (!state.autoDetect) autoSpeedSamples.length = 0;
+  else { userPannedAway = false; map.panTo(state.me, { animate:true }); } // re-enabling Auto always resumes following
   savePrefs();
 }
 
@@ -1369,6 +1383,13 @@ function boot(center){
   setInterval(applyDayNight, 5*60*1000);
   map.on('zoomend', render);
   map.on('moveend', () => { clearTimeout(moveRenderTimer); moveRenderTimer = setTimeout(render, 150); });
+  // A real drag (not a programmatic panTo from the auto-follow above)
+  // means the user wants to look somewhere else — stop fighting them
+  // until they re-enable Auto.
+  map.on('dragstart', () => {
+    if (state.autoDetect && !userPannedAway) showToast('Map paused following you — tap Auto to resume');
+    userPannedAway = true;
+  });
   if (navigator.geolocation && navigator.geolocation.watchPosition){
     navigator.geolocation.watchPosition(handleGeoAuto, () => {}, { enableHighAccuracy:true, maximumAge:4000 });
   }
