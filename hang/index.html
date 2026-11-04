@@ -1108,6 +1108,14 @@ document.getElementById('help-btn').onclick = openOnboard;
 let moveRenderTimer = null;
 function boot(center){
   state.me = center;
+  // The map is created at a hardcoded default center before the user's
+  // real location is known (see the L.map(...) call above) — it has to be
+  // re-centered here once we actually know where they are, or everything
+  // below gets generated around the real location while the camera stays
+  // parked on the default. Zoom 14 (not 13) so individually-rendered
+  // people — moving cars, walkers, idle animations — and landmarks are
+  // visible immediately, instead of only the clustered zoomed-out view.
+  map.setView(center, 14);
   state.people = genPeople(center);
   state.landmarks = genLandmarks(center);
   loadHotspots();
