@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#0A0712" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Hang" />
+<meta name="mobile-web-app-capable" content="yes" />
 <title>Hang — concept demo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
@@ -422,6 +429,22 @@ const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara",
 const RADII = [1,5,10,15,25];
 
 const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null, autoDetect:true, isMinor:null, premiumText:false };
+
+/* ---------- preferences: status/radius/auto-detect used to reset on
+   every reload — a real app remembers how you left it. ---------- */
+const PREFS_KEY = 'hang-prefs-v1';
+function loadPrefs(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+    if (!saved) return;
+    if (typeof saved.radius === 'number' && RADII.includes(saved.radius)) state.radius = saved.radius;
+    if (typeof saved.autoDetect === 'boolean') state.autoDetect = saved.autoDetect;
+    if (typeof saved.status === 'string') state.status = saved.status;
+  } catch(e){}
+}
+function savePrefs(){
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ radius: state.radius, autoDetect: state.autoDetect, status: state.status })); } catch(e){}
+}
 const sparkedIds = new Set();
 let sparkLine = null;
 
@@ -789,20 +812,22 @@ function renderRadius(){
     const b = document.createElement('button');
     b.textContent = r+'km';
     b.className = r===state.radius ? 'active' : '';
-    b.onclick = () => { state.radius = r; renderRadius(); render(); showToast(`Showing people within ${r} km`); };
+    b.onclick = () => { state.radius = r; renderRadius(); render(); savePrefs(); showToast(`Showing people within ${r} km`); };
     wrap.appendChild(b);
   });
 }
 
 /* ---------- status sheet ---------- */
-function setStatus(catId, auto){
+function setStatus(catId, auto, restore){
   const c = catById(catId);
-  if (!c || state.status === catId) return;
+  if (!c || (state.status === catId && !restore)) return;
   state.status = catId;
   document.getElementById('self-status').textContent = 'Status: ' + c.label + (auto ? ' (auto)' : '');
   document.getElementById('self-avatar').textContent = c.icon;
   document.getElementById('self-avatar').style.background = c.grad;
   renderStatusGrid();
+  savePrefs();
+  if (restore) return; // silent — just syncing the UI to a restored status, not a new pick
   showToast(auto ? `Looks like you're ${c.label.toLowerCase()} — showing that on the map` : `You're now showing as ${c.label} on the map`);
   checkSparks();
 }
@@ -861,6 +886,7 @@ function toggleAutoDetect(){
   if (btn) { btn.classList.toggle('on', state.autoDetect); btn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
   showToast(state.autoDetect ? 'Auto-detecting travel from movement' : 'Auto-detect off — status stays manual');
   if (!state.autoDetect) autoSpeedSamples.length = 0;
+  savePrefs();
 }
 
 /* ---------- day/night lighting, tied to real local time ---------- */
@@ -1108,6 +1134,7 @@ document.getElementById('help-btn').onclick = openOnboard;
 let moveRenderTimer = null;
 function boot(center){
   state.me = center;
+  loadPrefs();
   // The map is created at a hardcoded default center before the user's
   // real location is known (see the L.map(...) call above) — it has to be
   // re-centered here once we actually know where they are, or everything
@@ -1119,6 +1146,15 @@ function boot(center){
   state.people = genPeople(center);
   state.landmarks = genLandmarks(center);
   loadHotspots();
+  // state.landmarks is rebuilt from scratch every boot, but a community
+  // spot that was already promoted (spawned:true) in a *previous* session
+  // only gets pushed into state.landmarks at the moment it crosses the
+  // threshold (see tickHotspots) — that moment already happened, so
+  // without this, an already-recurring spot would silently vanish from
+  // the map on every reload even though hotspotCells still remembers it.
+  Object.entries(hotspotCells).forEach(([key, c]) => {
+    if (c.spawned) state.landmarks.push({ id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+  });
   // Seed one guaranteed-visible hot spot at the "plant" cluster near the
   // user, same reasoning as the Sparks plants: with only a handful of
   // simulated ticks per session, organic recurring gatherings are real but
@@ -1135,6 +1171,9 @@ function boot(center){
   renderFilters();
   renderRadius();
   renderStatusGrid();
+  setStatus(state.status, false, true); // sync avatar/label to the restored (or default) status
+  const autoBtn = document.getElementById('auto-toggle');
+  if (autoBtn) { autoBtn.classList.toggle('on', state.autoDetect); autoBtn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
   applyDayNight();
   setWeather('clear');
   let seenBefore = false;
