@@ -57,16 +57,15 @@
   }
   html,body{margin:0;padding:0;height:100%;background:radial-gradient(ellipse 120% 70% at 20% 0%, rgba(201,98,46,0.14), transparent 55%), radial-gradient(ellipse 120% 70% at 85% 100%, rgba(47,143,134,0.10), transparent 55%), var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Inter,sans-serif;color:var(--text);overflow:hidden}
   #map{position:absolute;inset:0;z-index:0;background:#C9B384}
-  /* Vintage-photo treatment rather than a hue-targeted shift — OSM's
-     stock colors (pink motorways, yellow-tan landuse, light blue water)
-     don't rotate cleanly into "orange blocks / teal water" by hue alone
-     (that pushed roads toward magenta instead). A strong sepia pass
-     unifies everything into one warm, aged cast first — like the
-     reference being a sun-bleached photo of a painted mural, not a
-     flat recolor — then a small rotate nudges the remaining warmth from
-     brown toward the mural's orange/teal split, with brightness/contrast
-     to read like worn concrete rather than a muddy dark photo. */
-  .maplibregl-canvas{filter:sepia(0.65) saturate(1.3) hue-rotate(-8deg) brightness(1.14) contrast(1.08)}
+  /* A light warm lift rather than the heavier vintage-photo sepia this
+     used to carry — the buildings now carry real color themselves
+     (the per-building window-pattern palette, see MapShim), and a
+     strong sepia pass was flattening that vivid red/teal/gold/violet
+     variety toward gray-olive, working directly against "colorful, not
+     boring." Saturation stays boosted so the real color underneath
+     reads clearly; sepia/hue-rotate are now just enough to keep the
+     warm, cohesive tone of the rest of the UI instead of a cold raw map. */
+  .maplibregl-canvas{filter:sepia(0.18) saturate(1.55) brightness(1.08) contrast(1.05)}
   .maplibregl-ctrl-attrib{background:rgba(250,238,210,0.55)!important;font-size:9px!important}
   .maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib{color:var(--muted)!important}
   .maplibregl-ctrl-attrib-button{filter:invert(0.3) sepia(0.3)}
@@ -1046,6 +1045,66 @@ class OverlayShapeShim {
 }
 L.circle = (pos, opts) => new OverlayShapeShim('circle', pos, opts);
 
+// Building facade textures — drawn on a real <canvas> and handed to
+// MapLibre as a tiled fill-extrusion-pattern, not simulated with a flat
+// paint color. A small seeded PRNG keeps each color's window layout
+// stable across day/night regenerations (so lit/unlit windows don't
+// jump to new random positions every time the lighting flips).
+const BUILDING_PALETTE = ['#D64545','#2F8F86','#E8A33D','#4A6FA5','#8A5FC9','#5FA85F','#C9622E'];
+function seededRand(seed){ let s = seed; return () => { s = (s*1103515245+12345) & 0x7fffffff; return s/0x7fffffff; }; }
+function makeWindowPattern(wallColor, lit, seed){
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = wallColor;
+  ctx.fillRect(0, 0, size, size);
+  const cols = 4, rows = 5, padX = 3, padY = 2, gapX = 2, gapY = 2;
+  const cw = (size - padX*2 - gapX*(cols-1)) / cols;
+  const ch = (size - padY*2 - gapY*(rows-1)) / rows;
+  const rand = seededRand(seed);
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++){
+      const x = padX + c*(cw+gapX), y = padY + r*(ch+gapY);
+      const isLit = lit && rand() < 0.45;
+      ctx.fillStyle = isLit ? 'rgba(255,221,130,0.95)' : 'rgba(15,15,25,0.5)';
+      ctx.fillRect(x, y, cw, ch);
+    }
+  }
+  return ctx.getImageData(0, 0, size, size);
+}
+// Reflective glass curtain-wall for tall buildings (skyscrapers) — the
+// "mirrors": a cyan-to-teal gradient, pane mullions, and a bright
+// diagonal sheen to read as reflective glass rather than a flat wall.
+function makeGlassPattern(lit){
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#BEE8F0'); grad.addColorStop(0.5, '#7FC4D8'); grad.addColorStop(1, '#4A93A8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = 'rgba(20,30,40,0.35)'; ctx.lineWidth = 1;
+  for (let x = 4; x < size; x += 8){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,size); ctx.stroke(); }
+  for (let y = 5; y < size; y += 10){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size,y); ctx.stroke(); }
+  ctx.save();
+  ctx.globalAlpha = 0.5; ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(0, size*0.15); ctx.lineTo(size*0.35, 0); ctx.lineTo(size*0.5, 0); ctx.lineTo(size*0.15, size*0.35);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  if (lit){
+    const rand = seededRand(777);
+    for (let i = 0; i < 8; i++){
+      if (rand() < 0.5) continue;
+      ctx.fillStyle = 'rgba(255,221,130,0.8)';
+      ctx.fillRect(2 + (i%4)*7, 3 + Math.floor(i/4)*14, 4, 5);
+    }
+  }
+  return ctx.getImageData(0, 0, size, size);
+}
+
 class MapShim {
   constructor(containerId, { center, zoom, maxZoom, minZoom }){
     this._gl = new maplibregl.Map({
@@ -1070,33 +1129,39 @@ class MapShim {
     // Clans-style palette — height-based coloring put almost every
     // building in the same orange/cream band (most buildings in any
     // real city are short-to-medium), which read as flat and samey
-    // rather than like a toy city. `fill-extrusion-vertical-gradient`
-    // adds real light/shadow shading up each facade instead of a flat
-    // single-tone fill. A thin roofline-edge layer on top keeps every
-    // building crisply outlined instead of blurring into its neighbors.
-    // Falls back to a flat-but-still-real map if a style has no
-    // building layer.
+    // rather than like a toy city. Each facade is tiled with a real
+    // window-grid pattern (drawn on a <canvas>, not painted on — see
+    // makeWindowPattern) instead of a flat color, tall buildings get a
+    // reflective glass-curtain-wall pattern instead (the "mirrors"),
+    // and every window pattern has a lit/unlit variant swapped by
+    // _updateBuildingLighting() to match real local day/night (see
+    // applyDayNight below) — literal lit windows at night, not just a
+    // color tint. `fill-extrusion-vertical-gradient` adds real
+    // light/shadow shading up each facade on top of that. A thin
+    // roofline-edge layer keeps every building crisply outlined instead
+    // of blurring into its neighbors. Falls back to a flat-but-still-
+    // real map if a style has no building layer.
     try {
       const sources = this._gl.getStyle().sources;
       const vecSrc = Object.keys(sources).find(id => sources[id].type === 'vector');
       if (!vecSrc) return;
+      this._windowsLit = isNightNow();
+      BUILDING_PALETTE.forEach((color, i) => this._gl.addImage('bwin-'+i, makeWindowPattern(color, this._windowsLit, i*97+13)));
+      this._gl.addImage('bwin-glass', makeGlassPattern(this._windowsLit));
       const buildingColor = ['match', ['%', ['id'], 7],
-        0, '#D64545', // brick red
-        1, '#2F8F86', // teal
-        2, '#E8A33D', // golden orange
-        3, '#4A6FA5', // royal blue
-        4, '#8A5FC9', // violet
-        5, '#5FA85F', // forest green
-        /* 6 */ '#C9622E', // terracotta
-      ];
+        0, '#D64545', 1, '#2F8F86', 2, '#E8A33D', 3, '#4A6FA5', 4, '#8A5FC9', 5, '#5FA85F', /* 6 */ '#C9622E'];
+      const buildingPattern = ['case',
+        ['>', ['coalesce', ['get','render_height'], 6], 28], 'bwin-glass',
+        ['concat', 'bwin-', ['to-string', ['%', ['id'], 7]]]];
       this._gl.addLayer({
         id: 'hang-3d-buildings', source: vecSrc, 'source-layer': 'building',
         type: 'fill-extrusion', minzoom: 14,
         paint: {
-          'fill-extrusion-color': buildingColor,
+          'fill-extrusion-color': buildingColor, // fallback while/if a pattern image is missing
+          'fill-extrusion-pattern': buildingPattern,
           'fill-extrusion-height': ['coalesce', ['get','render_height'], 6],
           'fill-extrusion-base': ['coalesce', ['get','render_min_height'], 0],
-          'fill-extrusion-opacity': 0.94,
+          'fill-extrusion-opacity': 0.96,
           'fill-extrusion-vertical-gradient': true,
         },
       });
@@ -1105,7 +1170,23 @@ class MapShim {
         type: 'line', minzoom: 14,
         paint: { 'line-color': '#2B1A0E', 'line-width': 1, 'line-opacity': 0.35 },
       });
+      // Real parks/greenery already come from the vector tiles — just
+      // too pastel/washed-out by default to read as a real park once
+      // the vintage canvas filter is on top of them too.
+      const boostFill = (id, color, opacity) => { if (this._gl.getLayer(id)) { this._gl.setPaintProperty(id, 'fill-color', color); this._gl.setPaintProperty(id, 'fill-opacity', opacity); } };
+      boostFill('park', '#7FD15A', 0.85);
+      boostFill('landcover_grass', '#8FD98A', 0.6);
+      boostFill('landcover_wood', '#4F9E4F', 0.6);
     } catch(e) { /* style without a usable building layer — map still fully works, just flat */ }
+  }
+  // Real local day/night (same clock as applyDayNight) swaps every
+  // building's window pattern between lit and unlit — actual glowing
+  // windows at night, not a color-tint approximation.
+  _updateBuildingLighting(lit){
+    if (this._windowsLit === lit || !this._gl.getLayer('hang-3d-buildings')) return;
+    this._windowsLit = lit;
+    BUILDING_PALETTE.forEach((color, i) => this._gl.updateImage('bwin-'+i, makeWindowPattern(color, lit, i*97+13)));
+    this._gl.updateImage('bwin-glass', makeGlassPattern(lit));
   }
   getZoom(){ return this._gl.getZoom(); }
   setView(pos, zoom, opts){
@@ -1581,6 +1662,7 @@ function applyDayNight(){
   else                    bg = 'linear-gradient(180deg, rgba(10,16,45,0.5), rgba(5,8,25,0.4))';
   el.style.background = bg;
   manageSkyEffects();
+  if (map && map._updateBuildingLighting) map._updateBuildingLighting(isNightNow());
 }
 
 /* ---------- night sky: comets and planes, purely decorative atmosphere
