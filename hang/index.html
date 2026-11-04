@@ -217,6 +217,30 @@
   .hang-marker .avatar3d.cat-smoking{animation:smoke-puff 2.8s ease-in-out infinite;animation-delay:var(--delay,0s)}
   @keyframes workout-pump{0%,100%{transform:scale(1)}30%{transform:scale(1.12)}60%{transform:scale(0.95)}}
   .hang-marker .avatar3d.cat-workout{animation:workout-pump 1.3s ease-in-out infinite;animation-delay:var(--delay,0s)}
+
+  /* real rising smoke — the idle wobble above wasn't visibly "smoking" at
+     a glance, so these are actual particles that rise and fade above the
+     avatar, not just a subtle wiggle on the emoji itself */
+  .hang-marker .smoke-wisp{position:absolute;left:50%;bottom:30px;width:5px;height:5px;border-radius:50%;
+    background:radial-gradient(circle, rgba(220,222,228,0.85), rgba(220,222,228,0));pointer-events:none;
+    animation:smoke-rise 2.4s ease-out infinite}
+  .hang-marker .smoke-wisp.w2{animation-delay:0.8s;left:54%}
+  .hang-marker .smoke-wisp.w3{animation-delay:1.6s;left:48%}
+  @keyframes smoke-rise{
+    0%{transform:translate(-50%,0) scale(0.6);opacity:0.75}
+    100%{transform:translate(-50%,-26px) scale(1.8);opacity:0}
+  }
+  /* sleeping: gentle breathing pulse + rising "Zzz", same literal-visual
+     idea as the smoke — showing the activity, not just naming it */
+  @keyframes sleep-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .hang-marker .avatar3d.cat-sleeping{animation:sleep-breathe 2.6s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  .hang-marker .zzz{position:absolute;right:2px;top:-2px;font-size:9px;font-weight:800;color:#C7CFFF;
+    text-shadow:0 1px 2px rgba(0,0,0,0.5);pointer-events:none;animation:zzz-rise 2.8s ease-out infinite}
+  .hang-marker .zzz.z2{animation-delay:0.9s;right:-2px}
+  @keyframes zzz-rise{
+    0%{transform:translateY(0) scale(0.7);opacity:0.9}
+    100%{transform:translateY(-16px) scale(1.15);opacity:0}
+  }
   /* driving: a real rotating vehicle, not a bobbing person */
   .hang-marker .avatar3d.cat-driving{width:34px;height:34px;border-radius:10px;animation:none;transition:transform .9s linear;color:#fff}
   .hang-marker.cat-driving .shadow{animation:none;opacity:0.3;width:28px}
@@ -245,6 +269,11 @@
   .hotspot-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,140,70,0.65);animation:hotspot-pulse 1.8s ease-out infinite}
   .hotspot-ring.r2{animation-delay:.6s}
   @keyframes hotspot-pulse{0%{transform:scale(.55);opacity:.85}100%{transform:scale(1.7);opacity:0}}
+
+  /* spot mode: a small solid pin, not a scaled-down avatar bubble */
+  .activity-spot{width:18px;height:18px;border-radius:50%;background:var(--scolor);
+    display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;
+    border:1.5px solid rgba(255,255,255,0.65);box-shadow:0 2px 6px rgba(0,0,0,0.45);cursor:pointer}
 
   #radius-circle{pointer-events:none}
 
@@ -470,6 +499,7 @@ const CATEGORIES = [
   { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)" },
   { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)" },
   { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)", ageRestricted:true },
+  { id:"sleeping",     label:"Sleeping",     icon:"😴", grad:"linear-gradient(135deg,#A8B4F0,#6E7CC9)" },
   { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)" },
   { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5]  },
   { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
@@ -628,7 +658,9 @@ function tickMovement(){
     const m = peopleMarkers[p.id];
     if (m) {
       m.setLatLng(p.pos);
-      if (p.cat === 'driving') {
+      // In spot mode the marker is a plain dot with no heading to show,
+      // so there's nothing to refresh — only rotate the real car icon.
+      if (p.cat === 'driving' && lastRenderMode !== 'spot') {
         m.setIcon(personIcon(p, sparkedIds.has(p.id))); // refresh heading rotation
         const el = m.getElement(); // setIcon replaces the DOM element, which wipes the aria-label — reapply it
         if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
@@ -693,6 +725,7 @@ let peopleMarkers = {};
 let clusterMarkers = {};
 let landmarkMarkers = [];
 let hotspotMarkers = {};
+let lastRenderMode = null; // 'spot' | 'cluster' | 'detail'
 const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
@@ -705,7 +738,15 @@ function personIcon(p, sparked){
   const bodyHtml = isDriving
     ? `<div class="avatar3d cat-driving" style="--mgrad:${cat.grad};--delay:${p.delay};transform:rotate(${p.heading}deg)">${CAR_SVG}</div>`
     : `<div class="avatar3d cat-${cat.id}" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div>`;
-  return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}${isDriving?' cat-driving':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div>${bodyHtml}<div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+  // Literal "doing the activity" particles — smoke actually rising for
+  // smoking, actual "Zzz" for sleeping — not just naming the category in
+  // a bubble, which is exactly what felt wrong before.
+  const particleHtml = cat.id === 'smoking'
+    ? `<div class="smoke-wisp"></div><div class="smoke-wisp w2"></div><div class="smoke-wisp w3"></div>`
+    : cat.id === 'sleeping'
+    ? `<div class="zzz">Z</div><div class="zzz z2">z</div>`
+    : '';
+  return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}${isDriving?' cat-driving':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div>${bodyHtml}${particleHtml}<div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
@@ -717,6 +758,14 @@ function landmarkIcon(icon, community){
 function hotspotIcon(heat){
   const strength = Math.min(1, heat / COMMUNITY_THRESHOLD);
   return L.divIcon({ className:'', html:`<div class="hotspot-marker" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>🔥</div>`, iconSize:[30,30], iconAnchor:[15,15] });
+}
+// "Spot mode": when exactly one activity filter is active, people are
+// pinpointed with a small solid dot instead of the full avatar bubble
+// (radar rings, shadow, idle animation) — a minimal "where are the yoga
+// people" marker, not a scaled-down version of the normal avatar.
+function spotIcon(cat){
+  const color = cat.grad.match(/#[0-9A-Fa-f]{6}/)[0];
+  return L.divIcon({ className:'', html:`<div class="activity-spot" style="--scolor:${color}">${cat.icon}</div>`, iconSize:[20,20], iconAnchor:[10,10] });
 }
 
 /* GTA-style zoom LOD: zoomed out shows clustered activity blips (cheap,
@@ -780,6 +829,30 @@ function renderDetail(visible){
       // simulated people.
       const el = m.getElement();
       if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
+      peopleMarkers[p.id] = m;
+    } else {
+      peopleMarkers[p.id].setLatLng(p.pos);
+    }
+  });
+}
+// Spot mode: exactly one activity filter active — pinpoint every matching
+// person as a small dot, not a clustered count blip, since the entire
+// point is seeing where they actually are, scattered or not. Still capped
+// to the current viewport (+ margin) for the same reason renderDetail is.
+function renderSpots(visible){
+  clearClusterMarkers();
+  const bounds = map.getBounds().pad(0.2);
+  const onscreen = visible.filter(p => bounds.contains(p.pos));
+  const keep = new Set(onscreen.map(p=>p.id));
+  Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
+  onscreen.forEach(p => {
+    const cat = catById(p.cat);
+    if (!peopleMarkers[p.id]) {
+      const m = L.marker(p.pos, { icon: spotIcon(cat) });
+      m.on('click', () => openProfile(p));
+      m.addTo(map);
+      const el = m.getElement();
+      if (el) el.setAttribute('aria-label', `${p.name} — ${cat.label}, open profile`);
       peopleMarkers[p.id] = m;
     } else {
       peopleMarkers[p.id].setLatLng(p.pos);
@@ -859,7 +932,14 @@ function render(){
     return true;
   });
 
-  if (map.getZoom() <= CLUSTER_ZOOM_MAX) renderClusters(visible);
+  // Exactly one active category filter -> spot mode (pinpoint markers,
+  // no clustering). Switching between spot/cluster/detail mode forces a
+  // clean marker rebuild, since an existing marker's icon style otherwise
+  // only gets replaced when it's freshly created, not on every render.
+  const mode = state.activeFilters.size === 1 ? 'spot' : (map.getZoom() <= CLUSTER_ZOOM_MAX ? 'cluster' : 'detail');
+  if (mode !== lastRenderMode) { clearPeopleMarkers(); clearClusterMarkers(); lastRenderMode = mode; }
+  if (mode === 'spot') renderSpots(visible);
+  else if (mode === 'cluster') renderClusters(visible);
   else renderDetail(visible);
   renderLandmarks();
   renderHotspots();
