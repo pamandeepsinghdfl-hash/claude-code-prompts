@@ -131,6 +131,25 @@
   @keyframes shadow-pulse{0%,100%{transform:scaleX(1);opacity:0.45}25%{transform:scaleX(0.6);opacity:0.2}50%{transform:scaleX(1);opacity:0.45}}
   .hang-marker.me .avatar3d{background:linear-gradient(135deg,#F8DCA0,#E8B65C);border-color:rgba(255,255,255,0.6)}
 
+  /* per-category idle "doing something" animations, so the world reads
+     as alive when zoomed in, not just bobbing uniformly */
+  @keyframes stretch-pulse{0%,100%{transform:scaleY(1) scaleX(1)}50%{transform:scaleY(1.12) scaleX(0.92) translateY(-5px)}}
+  .hang-marker .avatar3d.cat-yoga{animation:stretch-pulse 3s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes study-wiggle{0%,100%{transform:rotate(0deg) translateY(0)}25%{transform:rotate(-7deg) translateY(-2px)}75%{transform:rotate(7deg) translateY(-2px)}}
+  .hang-marker .avatar3d.cat-study{animation:study-wiggle 2.6s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes dog-jitter{0%,100%{transform:translate(0,0)}20%{transform:translate(-3px,-2px)}40%{transform:translate(3px,0)}60%{transform:translate(-2px,-3px)}80%{transform:translate(2px,0)}}
+  .hang-marker .avatar3d.cat-dogwalk{animation:dog-jitter 1.1s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes walk-sway{0%,100%{transform:translateX(0) rotate(0deg)}25%{transform:translateX(-3px) rotate(-6deg)}75%{transform:translateX(3px) rotate(6deg)}}
+  .hang-marker .avatar3d.cat-walking{animation:walk-sway 0.85s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes smoke-puff{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(3deg)}}
+  .hang-marker .avatar3d.cat-smoking{animation:smoke-puff 2.8s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes workout-pump{0%,100%{transform:scale(1)}30%{transform:scale(1.12)}60%{transform:scale(0.95)}}
+  .hang-marker .avatar3d.cat-workout{animation:workout-pump 1.3s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  /* driving: a real rotating vehicle, not a bobbing person */
+  .hang-marker .avatar3d.cat-driving{width:34px;height:34px;border-radius:10px;animation:none;transition:transform .9s linear;color:#fff}
+  .hang-marker.cat-driving .shadow{animation:none;opacity:0.3;width:28px}
+  .hang-marker.cat-driving .radar{animation-duration:1.4s}
+
   /* GTA-style zoomed-out activity blips */
   .cluster-blip{position:relative;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cgrad);border:2px solid rgba(255,255,255,0.55);box-shadow:0 6px 16px rgba(0,0,0,0.55), 0 0 0 5px rgba(255,255,255,0.08);cursor:pointer;animation:hop 2.6s cubic-bezier(.33,0,.2,1) infinite}
   .cluster-blip::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:1.5px dashed rgba(255,255,255,0.4);animation:cluster-spin 9s linear infinite}
@@ -151,6 +170,13 @@
   /* ---------- high-tech HUD layer ---------- */
   #scanlines{position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:0.35;background:repeating-linear-gradient(0deg,rgba(255,255,255,0.05) 0px,rgba(255,255,255,0.05) 1px,transparent 1px,transparent 3px)}
   #vignette{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(2,4,8,0.55) 100%)}
+  #daynight{position:fixed;inset:0;z-index:4;pointer-events:none;transition:background 2.5s ease}
+  #weather-layer{position:fixed;inset:0;z-index:7;pointer-events:none;overflow:hidden}
+  .rain-drop{position:absolute;top:-24px;width:1.5px;height:16px;border-radius:2px;background:linear-gradient(180deg,rgba(180,210,255,0),rgba(180,210,255,0.6));animation:rain-fall linear infinite}
+  @keyframes rain-fall{to{transform:translateY(112vh)}}
+  .snow-flake{position:absolute;top:-16px;color:rgba(255,255,255,0.9);font-size:9px;animation:snow-fall linear infinite}
+  @keyframes snow-fall{to{transform:translateY(112vh) translateX(24px)}}
+  #weather-toggle{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
   #radar-sweep{position:fixed;top:50%;left:50%;width:560px;height:560px;margin:-280px 0 0 -280px;z-index:6;pointer-events:none;border-radius:50%;opacity:0.5}
   #radar-sweep::before{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(127,216,230,0.18)}
   #radar-sweep::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(127,216,230,0.0) 0deg,rgba(127,216,230,0.0) 300deg,rgba(127,216,230,0.22) 338deg,rgba(185,240,246,0.55) 356deg,rgba(127,216,230,0.0) 360deg);animation:radar-spin 4.2s linear infinite}
@@ -189,8 +215,10 @@
 
 <div id="map"></div>
 <div id="vignette"></div>
+<div id="daynight"></div>
 <div id="scanlines"></div>
 <div id="radar-sweep"></div>
+<div id="weather-layer"></div>
 <div id="radar-rings"><div class="radar-ring"></div></div>
 
 <div id="spark-card" class="glass">
@@ -206,6 +234,7 @@
   <div style="display:flex;align-items:center;gap:8px;pointer-events:auto">
     <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
     <button id="help-btn" class="glass" aria-label="Show tutorial">?</button>
+    <button id="weather-toggle" class="glass" aria-label="Toggle weather">☀️</button>
   </div>
   <div id="nearby-strip">
     <div id="nearby-count" class="glass">— nearby</div>
@@ -406,7 +435,10 @@ function tickMovement(){
     stepPerson(p, 1);
     moved = true;
     const m = peopleMarkers[p.id];
-    if (m) m.setLatLng(p.pos);
+    if (m) {
+      m.setLatLng(p.pos);
+      if (p.cat === 'driving') m.setIcon(personIcon(p, sparkedIds.has(p.id))); // refresh heading rotation
+    }
   });
   if (moved) render();
 }
@@ -427,9 +459,14 @@ const CLUSTER_ZOOM_MAX = 13;
 function meIcon(){
   return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂</div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
+const CAR_SVG = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 1.5 9.2 8H5.3C4 8 3 9 3 10.3V16h2a2 2 0 0 0 4 0h6a2 2 0 0 0 4 0h2v-5.7C21 9 20 8 18.7 8h-3.9L12 1.5Zm-2 8L12 4l2 5.5H10Z"/></svg>`;
 function personIcon(p, sparked){
   const cat = catById(p.cat);
-  return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div><div class="avatar3d" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div><div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+  const isDriving = cat.id === 'driving';
+  const bodyHtml = isDriving
+    ? `<div class="avatar3d cat-driving" style="--mgrad:${cat.grad};--delay:${p.delay};transform:rotate(${p.heading}deg)">${CAR_SVG}</div>`
+    : `<div class="avatar3d cat-${cat.id}" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div>`;
+  return L.divIcon({ className:'', html:`<div class="hang-marker${sparked?' sparked':''}${isDriving?' cat-driving':''}"><div class="hit"></div><div class="radar" style="--mcolor:${cat.grad.match(/#[0-9A-Fa-f]{6}/)[0]}"></div>${bodyHtml}<div class="shadow" style="--delay:${p.delay}"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
@@ -640,6 +677,48 @@ function toggleAutoDetect(){
   if (!state.autoDetect) autoSpeedSamples.length = 0;
 }
 
+/* ---------- day/night lighting, tied to real local time ---------- */
+function applyDayNight(){
+  const h = new Date().getHours();
+  const el = document.getElementById('daynight');
+  if (!el) return;
+  let bg;
+  if (h>=5 && h<7)       bg = 'linear-gradient(180deg, rgba(255,170,120,0.22), rgba(255,120,90,0.07))';
+  else if (h>=7 && h<17) bg = 'linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0))';
+  else if (h>=17 && h<19) bg = 'linear-gradient(180deg, rgba(255,140,80,0.26), rgba(130,60,120,0.17))';
+  else                    bg = 'linear-gradient(180deg, rgba(10,16,45,0.5), rgba(5,8,25,0.4))';
+  el.style.background = bg;
+}
+
+/* ---------- weather overlay (visual only, not simulated physics) ---------- */
+let weatherMode = 'clear';
+const WEATHER_CYCLE = ['clear','rain','snow'];
+const WEATHER_ICON = { clear:'☀️', rain:'🌧️', snow:'❄️' };
+function setWeather(mode){
+  weatherMode = mode;
+  const layer = document.getElementById('weather-layer');
+  layer.innerHTML = '';
+  const btn = document.getElementById('weather-toggle');
+  if (btn) btn.textContent = WEATHER_ICON[mode];
+  if (mode === 'clear') return;
+  const count = mode === 'rain' ? 70 : 45;
+  for (let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = mode === 'rain' ? 'rain-drop' : 'snow-flake';
+    if (mode === 'snow') el.textContent = '❄';
+    el.style.left = (Math.random()*100) + '%';
+    const dur = mode === 'rain' ? (0.5 + Math.random()*0.4) : (4 + Math.random()*4);
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = (Math.random()*dur) + 's';
+    layer.appendChild(el);
+  }
+}
+document.getElementById('weather-toggle').onclick = () => {
+  const next = WEATHER_CYCLE[(WEATHER_CYCLE.indexOf(weatherMode)+1) % WEATHER_CYCLE.length];
+  setWeather(next);
+  showToast(`Weather: ${next}`);
+};
+
 /* ---------- profile sheet + walkie-talkie ---------- */
 const profileSheet = document.getElementById('profile-sheet');
 function openProfile(p){
@@ -848,11 +927,14 @@ function boot(center){
   renderFilters();
   renderRadius();
   renderStatusGrid();
+  applyDayNight();
+  setWeather('clear');
   let seenBefore = false;
   try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
   if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
   setInterval(checkSparks, 6500);
   setInterval(tickMovement, 1000);
+  setInterval(applyDayNight, 5*60*1000);
   map.on('zoomend', render);
   map.on('moveend', () => { clearTimeout(moveRenderTimer); moveRenderTimer = setTimeout(render, 150); });
   if (navigator.geolocation && navigator.geolocation.watchPosition){
