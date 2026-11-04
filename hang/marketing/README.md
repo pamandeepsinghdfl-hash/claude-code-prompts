@@ -1,5 +1,8 @@
 # Hang — marketing assets
 
+- `design-psychology-notes.md` — sourced UX/cognitive-psychology research (not medical
+  literature — see the doc's own note on that) behind the Free/Premium badge styling,
+  CTA sizing/placement, and the age-gate's closing moment in the app itself.
 - `hang-marketing-trailer.mp4` — **the full marketing video** (72s, 9:16, with real
   narration + ambient audio). Cold-open punchline → hook → 7 vox-pop interview beats
   → real screen-recorded app demo (narrated) → mid-roll CTA → push-to-talk beat → CTA
