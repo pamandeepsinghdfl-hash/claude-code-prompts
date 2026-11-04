@@ -320,6 +320,23 @@
   .hang-marker .avatar3d.cat-smoking{animation:smoke-puff 2.8s ease-in-out infinite;animation-delay:var(--delay,0s)}
   @keyframes workout-pump{0%,100%{transform:scale(1)}30%{transform:scale(1.12)}60%{transform:scale(0.95)}}
   .hang-marker .avatar3d.cat-workout{animation:workout-pump 1.3s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  /* every remaining category gets its own distinct motion too, so no
+     badge is left just doing the generic hop — each one visibly reads
+     as "doing that activity" at a glance, not just bouncing in place */
+  @keyframes prayer-glow{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.07) translateY(-3px)}}
+  .hang-marker .avatar3d.cat-prayer{animation:prayer-glow 3.4s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes spirit-float{0%,100%{transform:translateY(0) rotate(0deg)}33%{transform:translateY(-6px) rotate(-4deg)}66%{transform:translateY(-2px) rotate(4deg)}}
+  .hang-marker .avatar3d.cat-spirituality{animation:spirit-float 4s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes science-fizz{0%,100%{transform:translate(0,0) rotate(0deg)}15%{transform:translate(-2px,-1px) rotate(-4deg)}30%{transform:translate(2px,0) rotate(3deg)}45%{transform:translate(-1px,-2px) rotate(-2deg)}60%{transform:translate(1px,0) rotate(2deg)}}
+  .hang-marker .avatar3d.cat-science{animation:science-fizz 1.6s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes bop-head{0%,100%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(-9deg) translateY(-4px)}}
+  .hang-marker .avatar3d.cat-music{animation:bop-head 0.65s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes sip-tilt{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-10deg)}35%{transform:rotate(-10deg)}55%{transform:rotate(0deg)}}
+  .hang-marker .avatar3d.cat-coffee{animation:sip-tilt 3.2s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes chew-bounce{0%,100%{transform:scaleY(1)}25%{transform:scaleY(0.88)}50%{transform:scaleY(1.05)}75%{transform:scaleY(0.92)}}
+  .hang-marker .avatar3d.cat-eating{animation:chew-bounce 0.9s ease-in-out infinite;animation-delay:var(--delay,0s)}
+  @keyframes chill-lean{0%,100%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(-6deg) translateY(-2px)}}
+  .hang-marker .avatar3d.cat-chill{animation:chill-lean 3.6s ease-in-out infinite;animation-delay:var(--delay,0s)}
 
   /* real rising smoke — the idle wobble above wasn't visibly "smoking" at
      a glance, so these are actual particles that rise and fade above the
@@ -358,7 +375,30 @@
 
   /* static decorative "real life objects" */
   .landmark{font-size:17px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55))}
-  .landmark.building{font-size:23px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6))}
+
+  /* Real buildings, not a flat emoji sticker: a small CSS-extruded block
+     (front wall + a thin shaded side + a roof cap), so zooming in reads
+     like looking down at an actual 3D structure from above — the
+     satellite-view feel the map is going for. Pure CSS (no 3D engine
+     available in a static HTML file), so it's a believable isometric-
+     style fake rather than a true extrusion, but it genuinely has a
+     front face, a shadowed side face and a roof, not just a glyph.
+     Scales up at closer zoom via --bscale (set per-tier in JS, since
+     Leaflet markers don't re-flow on their own as you zoom). */
+  .building3d{position:relative;width:100%;height:100%;transform:scale(var(--bscale,1));transform-origin:50% 100%}
+  .building3d .b-side{position:absolute;right:-4px;bottom:3px;width:7px;height:72%;
+    background:var(--wall-dark,#9c8a66);border-radius:0 2px 2px 0;
+    box-shadow:inset -2px 0 3px rgba(0,0,0,0.35)}
+  .building3d .b-front{position:absolute;left:0;bottom:3px;width:100%;height:72%;
+    background:var(--wall,#E8D9B8);border-radius:2px 1px 1px 2px;
+    background-image:repeating-linear-gradient(to bottom, rgba(40,25,10,0.22) 0 1.5px, transparent 1.5px 7px),
+                      repeating-linear-gradient(to right, rgba(40,25,10,0.14) 0 1px, transparent 1px 6px);
+    box-shadow:0 2px 4px rgba(30,18,8,0.5), inset 0 1px 0 rgba(255,255,255,0.3)}
+  .building3d .b-roof{position:absolute;left:-12%;top:0;width:124%;height:32%;
+    background:var(--roof,#C9622E);clip-path:polygon(6% 100%,50% 0%,94% 100%);
+    filter:brightness(1.06);box-shadow:0 1px 2px rgba(30,18,8,0.45)}
+  .building3d .b-tag{position:absolute;left:50%;top:-3px;transform:translateX(-50%);font-size:11px;
+    filter:drop-shadow(0 1px 2px rgba(30,18,8,0.6))}
 
   /* community spot: a permanent landmark that "grew" because people kept
      meeting in the same place, instead of being pre-placed decoration */
@@ -634,19 +674,19 @@ if (typeof L === 'undefined') {
 }
 
 const CATEGORIES = [
-  { id:"spirituality", label:"Spirituality", icon:"✨", grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)" },
+  { id:"spirituality", label:"Spirituality", icon:"✨", grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)", portrait:"char-spirituality.png" },
   { id:"prayer",       label:"Prayer",       icon:"🙏", grad:"linear-gradient(135deg,#F8DCA0,#E8B65C)", portrait:"char-praying.png" },
-  { id:"yoga",         label:"Yoga",         icon:"🧘", grad:"linear-gradient(135deg,#A6F0C8,#5FC78E)" },
-  { id:"study",        label:"Study",        icon:"📚", grad:"linear-gradient(135deg,#9BE7F2,#5BA7D6)" },
-  { id:"science",      label:"Science",      icon:"🔬", grad:"linear-gradient(135deg,#7FE0E0,#3FA7A7)" },
-  { id:"music",        label:"Music",        icon:"🎧", grad:"linear-gradient(135deg,#F7A6C4,#E0608F)" },
-  { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)" },
-  { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)" },
+  { id:"yoga",         label:"Yoga",         icon:"🧘", grad:"linear-gradient(135deg,#A6F0C8,#5FC78E)", portrait:"char-yoga.png" },
+  { id:"study",        label:"Study",        icon:"📚", grad:"linear-gradient(135deg,#9BE7F2,#5BA7D6)", portrait:"char-study.png" },
+  { id:"science",      label:"Science",      icon:"🔬", grad:"linear-gradient(135deg,#7FE0E0,#3FA7A7)", portrait:"char-science.png" },
+  { id:"music",        label:"Music",        icon:"🎧", grad:"linear-gradient(135deg,#F7A6C4,#E0608F)", portrait:"char-music.png" },
+  { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)", portrait:"char-workout.png" },
+  { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)", portrait:"char-coffee.png" },
   { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)", ageRestricted:true, portrait:"char-smoking.png" },
   { id:"sleeping",     label:"Sleeping",     icon:"😴", grad:"linear-gradient(135deg,#A8B4F0,#6E7CC9)", portrait:"char-sleeping.png" },
   { id:"eating",       label:"Eating",       icon:"🍔", grad:"linear-gradient(135deg,#FFD08A,#E0893F)", portrait:"char-eating.png" },
-  { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)" },
-  { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5]  },
+  { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)", portrait:"char-chill.png" },
+  { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5], portrait:"char-walking.png" },
   { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
   { id:"dogwalk",      label:"Dog walk",     icon:"🐕", grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true },
 ];
@@ -935,10 +975,33 @@ function personIcon(p, sparked){
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
 }
-function landmarkIcon(icon, community, building){
-  const cls = community ? 'landmark community-spot' : building ? 'landmark building' : 'landmark';
-  const size = community ? [34,38] : building ? [26,30] : [22,26];
-  const anchor = community ? [17,32] : building ? [13,26] : [11,22];
+// Per building-type wall/roof colors, tuned to the warm painted-mural
+// palette so these read as part of the same world as the map tiles.
+const BUILDING_COLORS = {
+  '🏠': { wall:'#E8D9B8', wallDark:'#C2AE82', roof:'#C9622E' },
+  '🏢': { wall:'#AEB8C2', wallDark:'#8891A0', roof:'#5A6672' },
+  '🏬': { wall:'#E0C68A', wallDark:'#B89B5C', roof:'#8B3A3A' },
+  '🏪': { wall:'#E0C68A', wallDark:'#B89B5C', roof:'#D98A3D' },
+  '🏦': { wall:'#D8CFC0', wallDark:'#AFA38C', roof:'#C7BFAF' },
+  '🏨': { wall:'#E8DCC3', wallDark:'#C4B68F', roof:'#2F8F86' },
+  '🏫': { wall:'#C97A5A', wallDark:'#9C5A3E', roof:'#7A3426' },
+  '☕': { wall:'#D9B97A', wallDark:'#AE8F52', roof:'#6B4226' },
+};
+// Building markers scale up at closer zoom (set per-tier by renderLandmarks),
+// so looking straight down reads more like real 3D structures the closer
+// you get — the "satellite view" feel — instead of a fixed-size sticker.
+const BUILDING_TIERS = { sm:{ bscale:0.8, size:[26,34] }, md:{ bscale:1.25, size:[36,50] }, lg:{ bscale:1.85, size:[52,74] } };
+function buildingZoomTier(zoom){ return zoom >= 17 ? 'lg' : zoom >= 15 ? 'md' : 'sm'; }
+function landmarkIcon(icon, community, building, tier){
+  if (building && !community) {
+    const c = BUILDING_COLORS[icon] || { wall:'#E0D2AE', wallDark:'#B8A77E', roof:'#A5673A' };
+    const t = BUILDING_TIERS[tier] || BUILDING_TIERS.md;
+    const style = `--wall:${c.wall};--wall-dark:${c.wallDark};--roof:${c.roof};--bscale:${t.bscale}`;
+    return L.divIcon({ className:'', html:`<div class="building3d" style="${style}"><div class="b-side"></div><div class="b-front"></div><div class="b-roof"></div><div class="b-tag">${icon}</div></div>`, iconSize:t.size, iconAnchor:[t.size[0]/2, t.size[1]-4] });
+  }
+  const cls = community ? 'landmark community-spot' : 'landmark';
+  const size = community ? [34,38] : [22,26];
+  const anchor = community ? [17,32] : [11,22];
   return L.divIcon({ className:'', html:`<div class="${cls}">${icon}${community?'<div class="community-ring"></div>':''}</div>`, iconSize:size, iconAnchor:anchor });
 }
 function hotspotIcon(heat){
@@ -1065,16 +1128,20 @@ function renderSpots(visible){
 // the list of landmarks, or whether they should be visible at this zoom.
 let landmarksDirty = true;
 let lastLandmarksVisible = null;
+let lastBuildingTier = null;
 function renderLandmarks(){
-  const visible = map.getZoom() >= 13; // decluttered when zoomed out, same as the GTA-style LOD for people
-  if (!landmarksDirty && visible === lastLandmarksVisible) return; // nothing changed — skip the rebuild
+  const zoom = map.getZoom();
+  const visible = zoom >= 13; // decluttered when zoomed out, same as the GTA-style LOD for people
+  const tier = buildingZoomTier(zoom);
+  if (!landmarksDirty && visible === lastLandmarksVisible && tier === lastBuildingTier) return; // nothing changed — skip the rebuild
   landmarksDirty = false;
   lastLandmarksVisible = visible;
+  lastBuildingTier = tier;
   landmarkMarkers.forEach(m => map.removeLayer(m));
   landmarkMarkers = [];
   if (!visible) return;
   (state.landmarks||[]).forEach(l => {
-    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community, l.building), interactive: !!l.community, zIndexOffset: l.community ? -100 : (l.building ? -300 : -500) });
+    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community, l.building, tier), interactive: !!l.community, zIndexOffset: l.community ? -100 : (l.building ? -300 : -500) });
     if (l.community) {
       m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
       m.addTo(map);
@@ -1537,14 +1604,40 @@ function speakLines(lines, onLineStart, onAllDone){
    voice finishes, when the person taps anywhere, or after a hard safety
    timeout in case speech is blocked entirely. Visually, this always
    plays regardless of browser autoplay policy; only the *voice* is
-   best-effort on top of it, same as before — so "every time you open
-   it" is honestly true for the intro itself, even on the sessions where
-   a stricter browser silently blocks the audio. */
+   best-effort on top of it — but "best-effort" used to mean "silent
+   almost every real-world open": boot() reaches this through an async
+   navigator.geolocation.getCurrentPosition() fetch plus a 500ms timer,
+   so the actual speechSynthesis.speak() call lands well outside any
+   user gesture, and on a *return* visit (age gate already answered)
+   boot() runs with no gesture at all. Every mobile browser's autoplay
+   policy silently drops speech started that way — no error, it just
+   never makes a sound. Two real fixes below: a synchronous "unlock"
+   utterance fired directly inside the actual tap handlers (age-gate
+   submit, and the very first tap anywhere for return visits where
+   there was no such click), which some browsers accept as covering a
+   later async speak() in the same session; and, since that's still not
+   guaranteed, detecting an unvoiced intro and having the *next* tap on
+   the character — a real, synchronous gesture — (re)start speech
+   instead of immediately dismissing, so hearing it costs at most one
+   extra tap instead of never happening. */
+let voiceUnlocked = false;
+function unlockVoiceOnce(){
+  if (voiceUnlocked || !('speechSynthesis' in window)) return;
+  voiceUnlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch(e){}
+}
+document.addEventListener('pointerdown', unlockVoiceOnce, { once:true, capture:true });
 const charIntroEl = document.getElementById('char-intro');
 function showCharacterIntro(onDismiss){
+  unlockVoiceOnce();
   charIntroEl.classList.add('open');
   charIntroEl.removeAttribute('inert');
   let dismissed = false;
+  let voiceConfirmedPlaying = false;
   function dismiss(){
     if (dismissed) return;
     dismissed = true;
@@ -1554,16 +1647,25 @@ function showCharacterIntro(onDismiss){
     charIntroEl.onclick = null;
     if (onDismiss) onDismiss();
   }
-  charIntroEl.onclick = dismiss;
+  function startSpeech(){
+    speakLines(
+      lines,
+      (line) => { voiceConfirmedPlaying = true; document.getElementById('char-caption').textContent = line; },
+      () => { clearTimeout(safety); dismiss(); }
+    );
+  }
+  // First tap: if the voice never actually started (blocked autoplay),
+  // use this real gesture to retry it instead of dismissing — only the
+  // *second* tap (or the safety timeout) closes the intro.
+  charIntroEl.onclick = () => {
+    if (!voiceConfirmedPlaying && 'speechSynthesis' in window) { startSpeech(); return; }
+    dismiss();
+  };
   const safety = setTimeout(dismiss, 12000); // in case speech is blocked or never fires its end event
   const lines = generateBriefingLines();
   document.getElementById('char-caption').textContent = lines[0] || '';
   charIntroEl.classList.add('speaking');
-  speakLines(
-    lines,
-    (line) => { document.getElementById('char-caption').textContent = line; },
-    () => { clearTimeout(safety); dismiss(); }
-  );
+  startSpeech();
 }
 /* ---------- profile sheet + walkie-talkie ---------- */
 const profileSheet = document.getElementById('profile-sheet');
@@ -1868,6 +1970,7 @@ const dobInput = document.getElementById('age-gate-dob');
 const ageSubmitBtn = document.getElementById('age-gate-submit');
 dobInput.addEventListener('input', () => { ageSubmitBtn.disabled = !dobInput.value; });
 ageSubmitBtn.onclick = () => {
+  unlockVoiceOnce(); // as close to the raw tap as possible, before any async work below
   const dob = new Date(dobInput.value);
   if (isNaN(dob.getTime())) return;
   const now = new Date();
