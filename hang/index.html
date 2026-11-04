@@ -225,8 +225,23 @@
   .hang-marker .hit{position:absolute;inset:-8px;pointer-events:auto;cursor:pointer}
   .hang-marker .radar{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--mcolor,#7FD8E6);opacity:0;animation:radar 2.6s ease-out infinite}
   @keyframes radar{0%{transform:scale(0.5);opacity:0.55}100%{transform:scale(1.9);opacity:0}}
-  .hang-marker .avatar3d{width:36px;height:36px;border-radius:50%;background:var(--mgrad,linear-gradient(135deg,#7FD8E6,#5B5BE6));display:flex;align-items:center;justify-content:center;font-size:17px;border:2px solid rgba(255,255,255,0.35);box-shadow:0 6px 14px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35);transform-style:preserve-3d;animation:hop 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
+  .hang-marker .avatar3d{position:relative;width:36px;height:36px;border-radius:50%;background:var(--mgrad,linear-gradient(135deg,#7FD8E6,#5B5BE6));display:flex;align-items:center;justify-content:center;font-size:17px;border:2px solid rgba(255,255,255,0.35);box-shadow:0 6px 14px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.35);transform-style:preserve-3d;animation:hop 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
   @keyframes hop{0%,100%{transform:translateY(0) rotateX(0deg) scale(1)}25%{transform:translateY(-9px) rotateX(10deg) scale(1.04)}50%{transform:translateY(0) rotateX(0deg) scale(1)}62%{transform:translateY(-2px) scale(0.98)}}
+  /* A flat emoji-in-a-circle read as a floating bubble, not a character
+     standing on the map. These are deliberately simple (not an attempt
+     at hand-painted game art — a static HTML file with no art pipeline
+     can't honestly compete with something like Clash of Clans) but they
+     turn the badge into something with a body, which is a real,
+     noticeable step toward "a little character" rather than a sticker. */
+  .hang-marker .char-leg{position:absolute;bottom:-6px;width:5px;height:10px;border-radius:2px;
+    background:linear-gradient(180deg,#2a2f3a,#15181f);box-shadow:0 2px 3px rgba(0,0,0,0.5);transform-origin:top center}
+  .hang-marker .char-leg.l{left:9px}
+  .hang-marker .char-leg.r{right:9px}
+  .hang-marker.cat-driving .char-leg{display:none} /* a car doesn't need legs */
+  @keyframes leg-walk-l{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(16deg)}}
+  @keyframes leg-walk-r{0%,100%{transform:rotate(16deg)}50%{transform:rotate(-16deg)}}
+  .hang-marker .avatar3d.cat-walking .char-leg.l,.hang-marker .avatar3d.cat-dogwalk .char-leg.l{animation:leg-walk-l 0.55s ease-in-out infinite}
+  .hang-marker .avatar3d.cat-walking .char-leg.r,.hang-marker .avatar3d.cat-dogwalk .char-leg.r{animation:leg-walk-r 0.55s ease-in-out infinite}
   .hang-marker .shadow{position:absolute;bottom:2px;width:22px;height:6px;border-radius:50%;background:rgba(0,0,0,0.45);filter:blur(1px);animation:shadow-pulse 2.4s cubic-bezier(.33,0,.2,1) infinite;animation-delay:var(--delay,0s)}
   @keyframes shadow-pulse{0%,100%{transform:scaleX(1);opacity:0.45}25%{transform:scaleX(0.6);opacity:0.2}50%{transform:scaleX(1);opacity:0.45}}
   .hang-marker.me .avatar3d{background:linear-gradient(135deg,#F8DCA0,#E8B65C);border-color:rgba(255,255,255,0.6)}
@@ -789,7 +804,7 @@ let lastVisiblePeople = []; // cached each render() so the nearby-list sheet doe
 const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
-  return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂</div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+  return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂<div class="char-leg l"></div><div class="char-leg r"></div></div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
 const CAR_SVG = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 1.5 9.2 8H5.3C4 8 3 9 3 10.3V16h2a2 2 0 0 0 4 0h6a2 2 0 0 0 4 0h2v-5.7C21 9 20 8 18.7 8h-3.9L12 1.5Zm-2 8L12 4l2 5.5H10Z"/></svg>`;
 function personIcon(p, sparked){
@@ -797,7 +812,7 @@ function personIcon(p, sparked){
   const isDriving = cat.id === 'driving';
   const bodyHtml = isDriving
     ? `<div class="avatar3d cat-driving" style="--mgrad:${cat.grad};--delay:${p.delay};transform:rotate(${p.heading}deg)">${CAR_SVG}</div>`
-    : `<div class="avatar3d cat-${cat.id}" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}</div>`;
+    : `<div class="avatar3d cat-${cat.id}" style="--mgrad:${cat.grad};--delay:${p.delay}">${cat.icon}<div class="char-leg l"></div><div class="char-leg r"></div></div>`;
   // Literal "doing the activity" particles — smoke actually rising for
   // smoking, actual "Zzz" for sleeping — not just naming the category in
   // a bubble, which is exactly what felt wrong before.
@@ -877,12 +892,19 @@ function renderClusters(visible){
     }
   });
 }
+// Only this many potential markers or fewer render unconditionally; past
+// it, restrict to the current viewport so 300 simulated people never
+// means 300 live DOM nodes at once. This was previously unconditional,
+// which meant even 3 matching people — cheap to render regardless of
+// pixels on screen — got silently hidden any time they fell outside
+// whatever the current zoomed-in viewport happened to be: a real person
+// out driving at 10km radius, zoomed in, would see "3 nearby" and an
+// empty map, because the 3 were correctly within range but off-screen.
+const VIEWPORT_CAP_THRESHOLD = 150;
 function renderDetail(visible){
   clearClusterMarkers();
-  // Cap individual markers to what's actually on screen (plus a margin)
-  // so 300 simulated people never means 300 live DOM nodes at once.
-  const bounds = map.getBounds().pad(0.2);
-  const onscreen = visible.filter(p => bounds.contains(p.pos));
+  const bounds = visible.length > VIEWPORT_CAP_THRESHOLD ? map.getBounds().pad(0.2) : null;
+  const onscreen = bounds ? visible.filter(p => bounds.contains(p.pos)) : visible;
   const keep = new Set(onscreen.map(p=>p.id));
   Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
   onscreen.forEach(p => {
@@ -908,8 +930,8 @@ function renderDetail(visible){
 // to the current viewport (+ margin) for the same reason renderDetail is.
 function renderSpots(visible){
   clearClusterMarkers();
-  const bounds = map.getBounds().pad(0.2);
-  const onscreen = visible.filter(p => bounds.contains(p.pos));
+  const bounds = visible.length > VIEWPORT_CAP_THRESHOLD ? map.getBounds().pad(0.2) : null;
+  const onscreen = bounds ? visible.filter(p => bounds.contains(p.pos)) : visible;
   const keep = new Set(onscreen.map(p=>p.id));
   Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
   onscreen.forEach(p => {
@@ -1103,7 +1125,19 @@ function renderRadius(){
     const b = document.createElement('button');
     b.textContent = r+'km';
     b.className = r===state.radius ? 'active' : '';
-    b.onclick = () => { state.radius = r; renderRadius(); render(); savePrefs(); showToast(`Showing people within ${r} km`); };
+    b.onclick = () => {
+      state.radius = r;
+      renderRadius();
+      render(); // updates radiusCircle's position/radius before we read its bounds below
+      // Picking a radius should actually show that radius — fit the view
+      // to the new circle so a 10km pick doesn't leave you zoomed in on
+      // a few square blocks of it, wondering where everyone went.
+      // (radiusCircle, not a fresh L.circle: a circle never added to the
+      // map has no projection context and getBounds() throws on it.)
+      map.fitBounds(radiusCircle.getBounds(), { maxZoom:16, animate:true });
+      savePrefs();
+      showToast(`Showing people within ${r} km`);
+    };
     wrap.appendChild(b);
   });
 }
