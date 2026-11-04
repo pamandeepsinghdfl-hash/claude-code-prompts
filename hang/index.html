@@ -298,6 +298,7 @@
 
   /* static decorative "real life objects" */
   .landmark{font-size:17px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55))}
+  .landmark.building{font-size:23px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6))}
 
   /* community spot: a permanent landmark that "grew" because people kept
      meeting in the same place, instead of being pre-placed decoration */
@@ -318,10 +319,6 @@
   .hotspot-marker.forming{filter:drop-shadow(0 0 7px rgba(255,200,80,0.75))}
   .hotspot-marker.forming .hotspot-ring{border-color:rgba(255,200,80,0.75);border-style:dashed}
 
-  /* spot mode: a small solid pin, not a scaled-down avatar bubble */
-  .activity-spot{width:18px;height:18px;border-radius:50%;background:var(--scolor);
-    display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;
-    border:1.5px solid rgba(255,255,255,0.65);box-shadow:0 2px 6px rgba(0,0,0,0.45);cursor:pointer}
 
   #radius-circle{pointer-events:none}
 
@@ -651,9 +648,27 @@ function destPoint(lat, lon, bearing, distKm){
 }
 
 const PEOPLE_COUNT = 300;
-const LANDMARK_ICONS = ['🌳','🌳','🌳','🌳','🌳','🌳','🌳','🌳','🌲','🌲','🌲','🪑','🪑','🪑','☕','⛲','🏛️','🚏','🚏','🏪','🏪','🌳','🌳','🪑'];
+// A real, honest scope note on "build our own city": Hang's whole point
+// is showing people at their *actual* real-world location so you can go
+// meet them — replacing the real map with a fully invented Clash-of-
+// Clans-style terrain would break that premise outright, not just be a
+// lot of work. What's genuinely buildable here is decorating the *real*
+// map with real building variety, the same way a city actually has a mix
+// of houses, shops and offices — not just scattered trees — so the world
+// reads as a built place layered on real streets, not a park.
+const LANDMARK_ICONS = [
+  { icon:'🏠', building:true }, { icon:'🏠', building:true }, { icon:'🏠', building:true },
+  { icon:'🏢', building:true }, { icon:'🏢', building:true },
+  { icon:'🏬', building:true }, { icon:'🏪', building:true }, { icon:'🏪', building:true },
+  { icon:'🏦', building:true }, { icon:'🏨', building:true }, { icon:'🏫', building:true },
+  { icon:'☕', building:true },
+  { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' },
+  { icon:'🌲' }, { icon:'🌲' }, { icon:'🌲' },
+  { icon:'🪑' }, { icon:'🪑' }, { icon:'🪑' },
+  { icon:'⛲' }, { icon:'🚏' }, { icon:'🚏' }, { icon:'🅿️' }, { icon:'🚦' },
+];
 function genLandmarks(center){
-  return LANDMARK_ICONS.map((icon, i) => ({ id:'lm'+i, icon, pos: jitterKm(center[0], center[1], 3.2) }));
+  return LANDMARK_ICONS.map((l, i) => ({ id:'lm'+i, icon:l.icon, building:!!l.building, pos: jitterKm(center[0], center[1], 3.2) }));
 }
 
 function genPeople(center){
@@ -826,9 +841,11 @@ function personIcon(p, sparked){
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
 }
-function landmarkIcon(icon, community){
-  const cls = community ? 'landmark community-spot' : 'landmark';
-  return L.divIcon({ className:'', html:`<div class="${cls}">${icon}${community?'<div class="community-ring"></div>':''}</div>`, iconSize: community?[34,38]:[22,26], iconAnchor: community?[17,32]:[11,22] });
+function landmarkIcon(icon, community, building){
+  const cls = community ? 'landmark community-spot' : building ? 'landmark building' : 'landmark';
+  const size = community ? [34,38] : building ? [26,30] : [22,26];
+  const anchor = community ? [17,32] : building ? [13,26] : [11,22];
+  return L.divIcon({ className:'', html:`<div class="${cls}">${icon}${community?'<div class="community-ring"></div>':''}</div>`, iconSize:size, iconAnchor:anchor });
 }
 function hotspotIcon(heat){
   const strength = Math.min(1, heat / COMMUNITY_THRESHOLD);
@@ -841,15 +858,6 @@ function hotspotIcon(heat){
   const cls = forming ? 'hotspot-marker forming' : 'hotspot-marker';
   return L.divIcon({ className:'', html:`<div class="${cls}" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>${icon}</div>`, iconSize:[30,30], iconAnchor:[15,15] });
 }
-// "Spot mode": when exactly one activity filter is active, people are
-// pinpointed with a small solid dot instead of the full avatar bubble
-// (radar rings, shadow, idle animation) — a minimal "where are the yoga
-// people" marker, not a scaled-down version of the normal avatar.
-function spotIcon(cat){
-  const color = cat.grad.match(/#[0-9A-Fa-f]{6}/)[0];
-  return L.divIcon({ className:'', html:`<div class="activity-spot" style="--scolor:${color}">${cat.icon}</div>`, iconSize:[20,20], iconAnchor:[10,10] });
-}
-
 /* GTA-style zoom LOD: zoomed out shows clustered activity blips (cheap,
    readable at a glance); zoomed in resolves into full detailed avatars.
    Clusters are grid-binned in lat/lon — an approximation, not an
@@ -928,6 +936,13 @@ function renderDetail(visible){
 // person as a small dot, not a clustered count blip, since the entire
 // point is seeing where they actually are, scattered or not. Still capped
 // to the current viewport (+ margin) for the same reason renderDetail is.
+// Pinpoints every matching person individually, bypassing clustering —
+// but as a full character (legs, idle animation, smoke/Zzz particles),
+// not a minimalist dot. A minimal pin was the first version of this, but
+// it meant filtering to one activity traded away the "see them actually
+// doing it" detail — the exact thing that made a plain emoji feel like a
+// sticker in the first place. Pinpointing *and* a real character aren't
+// actually in tension; there was no reason to give up one for the other.
 function renderSpots(visible){
   clearClusterMarkers();
   const bounds = visible.length > VIEWPORT_CAP_THRESHOLD ? map.getBounds().pad(0.2) : null;
@@ -935,13 +950,12 @@ function renderSpots(visible){
   const keep = new Set(onscreen.map(p=>p.id));
   Object.keys(peopleMarkers).forEach(id => { if (!keep.has(id)) { map.removeLayer(peopleMarkers[id]); delete peopleMarkers[id]; } });
   onscreen.forEach(p => {
-    const cat = catById(p.cat);
     if (!peopleMarkers[p.id]) {
-      const m = L.marker(p.pos, { icon: spotIcon(cat) });
+      const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
       m.on('click', () => openProfile(p));
       m.addTo(map);
       const el = m.getElement();
-      if (el) el.setAttribute('aria-label', `${p.name} — ${cat.label}, open profile`);
+      if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
       peopleMarkers[p.id] = m;
     } else {
       peopleMarkers[p.id].setLatLng(p.pos);
@@ -966,7 +980,7 @@ function renderLandmarks(){
   landmarkMarkers = [];
   if (!visible) return;
   (state.landmarks||[]).forEach(l => {
-    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community), interactive: !!l.community, zIndexOffset: l.community ? -100 : -500 });
+    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community, l.building), interactive: !!l.community, zIndexOffset: l.community ? -100 : (l.building ? -300 : -500) });
     if (l.community) {
       m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
       m.addTo(map);
