@@ -160,6 +160,20 @@
   /* static decorative "real life objects" */
   .landmark{font-size:17px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55))}
 
+  /* community spot: a permanent landmark that "grew" because people kept
+     meeting in the same place, instead of being pre-placed decoration */
+  .landmark.community-spot{font-size:26px;position:relative;filter:drop-shadow(0 0 8px rgba(255,180,74,0.8))}
+  .community-ring{position:absolute;inset:-9px;border-radius:50%;border:1.5px solid rgba(255,180,74,0.55);animation:community-pulse 2.6s ease-out infinite}
+  @keyframes community-pulse{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+
+  /* hot spot: live, not-yet-permanent gathering heat — glows hotter the
+     closer it is to becoming a community spot */
+  .hotspot-marker{position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:16px;
+    filter:drop-shadow(0 0 calc(4px + 6px*var(--hstrength,0)) rgba(255,110,60,calc(0.5 + 0.4*var(--hstrength,0))))}
+  .hotspot-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,140,70,0.65);animation:hotspot-pulse 1.8s ease-out infinite}
+  .hotspot-ring.r2{animation-delay:.6s}
+  @keyframes hotspot-pulse{0%{transform:scale(.55);opacity:.85}100%{transform:scale(1.7);opacity:0}}
+
   #radius-circle{pointer-events:none}
 
   #toast{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:50%;transform:translateX(-50%) translateY(-8px);z-index:70;padding:10px 16px;border-radius:14px;font-size:12.5px;opacity:0;pointer-events:none;transition:all .25s ease;max-width:86vw;text-align:center}
@@ -338,6 +352,36 @@ const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), stat
 const sparkedIds = new Set();
 let sparkLine = null;
 
+/* ---------- hot spots: real recurring-gathering detection. Every tick we
+   bin people into a coarse grid and accumulate "heat" per cell when
+   several people occupy it; heat decays steadily when nobody's there, so
+   only places people keep coming back to stay lit. Cross a threshold and
+   the spot shows on the map; stay hot long enough and it "grows" into a
+   permanent community landmark — a real feature off real (simulated)
+   occupancy data, persisted in localStorage so it survives reloads like a
+   genuine recurring place would. ---------- */
+const HOTSPOT_CELL_DEG = 0.0035;      // ~350-400m grid cell
+const HOTSPOT_DECAY = 0.965;          // heat multiplier applied every tick
+const HOTSPOT_MIN_OCCUPANTS = 2;      // people needed in a cell to add heat
+const HOTSPOT_THRESHOLD = 6;          // heat to show as an active Hot Spot
+const COMMUNITY_THRESHOLD = 16;       // sustained heat to spawn a permanent spot
+const HOTSPOT_STORE_KEY = 'hang_hotspot_heat_v1';
+let hotspotCells = {}; // cellKey -> { lat, lon, heat, visits, spawned }
+function hotspotCellKey(pos){
+  return Math.round(pos[0]/HOTSPOT_CELL_DEG) + '_' + Math.round(pos[1]/HOTSPOT_CELL_DEG);
+}
+function loadHotspots(){
+  try {
+    const raw = localStorage.getItem(HOTSPOT_STORE_KEY);
+    if (raw) hotspotCells = JSON.parse(raw);
+  } catch(e){ hotspotCells = {}; }
+}
+let hotspotSaveCounter = 0;
+function saveHotspots(){
+  if (++hotspotSaveCounter % 5 !== 0) return; // throttle writes
+  try { localStorage.setItem(HOTSPOT_STORE_KEY, JSON.stringify(hotspotCells)); } catch(e){}
+}
+
 /* ---------- geo helpers ---------- */
 function jitterKm(lat, lon, maxKm){
   const r = maxKm * Math.sqrt(Math.random());
@@ -443,6 +487,42 @@ function tickMovement(){
   if (moved) render();
 }
 
+function tickHotspots(){
+  // decay every known cell first, so empty spots fade out over time
+  Object.values(hotspotCells).forEach(c => { c.heat *= HOTSPOT_DECAY; });
+
+  // bin current people into cells and add heat where enough are gathered
+  const groups = {};
+  state.people.forEach(p => {
+    const key = hotspotCellKey(p.pos);
+    (groups[key] || (groups[key] = [])).push(p);
+  });
+  Object.entries(groups).forEach(([key, members]) => {
+    if (members.length < HOTSPOT_MIN_OCCUPANTS) return;
+    const lat = members.reduce((a,p)=>a+p.pos[0],0) / members.length;
+    const lon = members.reduce((a,p)=>a+p.pos[1],0) / members.length;
+    if (!hotspotCells[key]) hotspotCells[key] = { lat, lon, heat:0, visits:0, spawned:false };
+    const c = hotspotCells[key];
+    c.lat = lat; c.lon = lon;
+    c.heat += members.length * 1.2;
+    c.visits += 1;
+  });
+
+  // clean up near-zero cells, and promote hot ones
+  Object.keys(hotspotCells).forEach(key => {
+    const c = hotspotCells[key];
+    if (c.heat < 0.4 && !c.spawned) { delete hotspotCells[key]; return; }
+    if (c.heat >= COMMUNITY_THRESHOLD && !c.spawned) {
+      c.spawned = true;
+      state.landmarks.push({ id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+      showToast('🏕️ A regular hangout spot just formed nearby — people keep showing up');
+    }
+  });
+
+  saveHotspots();
+  renderHotspots();
+}
+
 /* ---------- map setup ---------- */
 const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16, minZoom:10 }).setView(state.me, 13);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -454,6 +534,7 @@ let meMarker = null;
 let peopleMarkers = {};
 let clusterMarkers = {};
 let landmarkMarkers = [];
+let hotspotMarkers = {};
 const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
@@ -471,8 +552,13 @@ function personIcon(p, sparked){
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
 }
-function landmarkIcon(icon){
-  return L.divIcon({ className:'', html:`<div class="landmark">${icon}</div>`, iconSize:[22,26], iconAnchor:[11,22] });
+function landmarkIcon(icon, community){
+  const cls = community ? 'landmark community-spot' : 'landmark';
+  return L.divIcon({ className:'', html:`<div class="${cls}">${icon}${community?'<div class="community-ring"></div>':''}</div>`, iconSize: community?[34,38]:[22,26], iconAnchor: community?[17,32]:[11,22] });
+}
+function hotspotIcon(heat){
+  const strength = Math.min(1, heat / COMMUNITY_THRESHOLD);
+  return L.divIcon({ className:'', html:`<div class="hotspot-marker" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>🔥</div>`, iconSize:[30,30], iconAnchor:[15,15] });
 }
 
 /* GTA-style zoom LOD: zoomed out shows clustered activity blips (cheap,
@@ -537,7 +623,28 @@ function renderLandmarks(){
   landmarkMarkers = [];
   if (map.getZoom() < 13) return; // decluttered when zoomed out, same as the GTA-style LOD for people
   (state.landmarks||[]).forEach(l => {
-    landmarkMarkers.push(L.marker(l.pos, { icon: landmarkIcon(l.icon), interactive:false, zIndexOffset:-500 }).addTo(map));
+    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community), interactive: !!l.community, zIndexOffset: l.community ? -100 : -500 });
+    if (l.community) m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
+    landmarkMarkers.push(m.addTo(map));
+  });
+}
+function renderHotspots(){
+  const zoom = map.getZoom();
+  const active = zoom >= 12
+    ? Object.entries(hotspotCells).filter(([,c]) => !c.spawned && c.heat >= HOTSPOT_THRESHOLD)
+    : [];
+  const keep = new Set(active.map(([key])=>key));
+  Object.keys(hotspotMarkers).forEach(key => { if (!keep.has(key)) { map.removeLayer(hotspotMarkers[key]); delete hotspotMarkers[key]; } });
+  active.forEach(([key, c]) => {
+    const pos = [c.lat, c.lon];
+    if (!hotspotMarkers[key]) {
+      const m = L.marker(pos, { icon: hotspotIcon(c.heat), zIndexOffset:-200 });
+      m.on('click', () => showToast(`🔥 Hot Spot — people keep gathering here (${Math.round(c.heat)} heat)`));
+      hotspotMarkers[key] = m.addTo(map);
+    } else {
+      hotspotMarkers[key].setLatLng(pos);
+      hotspotMarkers[key].setIcon(hotspotIcon(c.heat));
+    }
   });
 }
 
@@ -561,6 +668,7 @@ function render(){
   if (map.getZoom() <= CLUSTER_ZOOM_MAX) renderClusters(visible);
   else renderDetail(visible);
   renderLandmarks();
+  renderHotspots();
 
   document.getElementById('nearby-count').textContent = `${visible.length} nearby`;
   renderNearbyStrip(visible);
@@ -922,7 +1030,19 @@ function boot(center){
   state.me = center;
   state.people = genPeople(center);
   state.landmarks = genLandmarks(center);
-  map.setView(center, 13);
+  loadHotspots();
+  // Seed one guaranteed-visible hot spot at the "plant" cluster near the
+  // user, same reasoning as the Sparks plants: with only a handful of
+  // simulated ticks per session, organic recurring gatherings are real but
+  // rare to witness live, so one is pre-seeded for demoability. Everything
+  // past this point — decay, growth, promotion — runs on the real system.
+  const plant0 = state.people.find(p => p.id === 'plant0');
+  if (plant0) {
+    const seedKey = hotspotCellKey(plant0.pos);
+    if (!hotspotCells[seedKey]) {
+      hotspotCells[seedKey] = { lat:plant0.pos[0], lon:plant0.pos[1], heat:COMMUNITY_THRESHOLD*0.55, visits:1, spawned:false };
+    }
+  }
   render();
   renderFilters();
   renderRadius();
@@ -934,6 +1054,7 @@ function boot(center){
   if (!seenBefore) openOnboard(); else setTimeout(checkSparks, 1200);
   setInterval(checkSparks, 6500);
   setInterval(tickMovement, 1000);
+  setInterval(tickHotspots, 4000);
   setInterval(applyDayNight, 5*60*1000);
   map.on('zoomend', render);
   map.on('moveend', () => { clearTimeout(moveRenderTimer); moveRenderTimer = setTimeout(render, 150); });
