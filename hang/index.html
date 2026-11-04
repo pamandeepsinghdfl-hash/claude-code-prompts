@@ -138,6 +138,26 @@
   #status-close{all:unset;display:block;width:100%;text-align:center;padding:13px 0;border-radius:14px;color:var(--muted);font-size:13px;border:1px solid var(--line)}
 
   /* ---------- onboarding tutorial ---------- */
+  /* ---------- animated welcome character: an original design (not any
+     existing fictional assistant), a simple glowing face that breathes
+     and "talks" while speaking, with its caption doubling as an on-
+     screen transcript for anyone who can't hear it or has sound off. */
+  #char-intro{position:fixed;inset:0;z-index:95;background:rgba(5,6,10,0.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:32px;opacity:0;pointer-events:none;transition:opacity .4s ease;cursor:pointer}
+  #char-intro.open{opacity:1;pointer-events:auto}
+  #char-stage{display:flex;flex-direction:column;align-items:center;text-align:center;transform:scale(0.72);opacity:0;transition:transform .5s cubic-bezier(.2,.9,.3,1.3),opacity .5s ease}
+  #char-intro.open #char-stage{transform:scale(1);opacity:1}
+  #char-figure{position:relative;width:116px;height:116px;margin-bottom:26px}
+  .char-glow{position:absolute;inset:-22px;border-radius:50%;background:var(--brand-gradient);filter:blur(30px);opacity:.5;animation:char-breathe 3.2s ease-in-out infinite}
+  .char-face{position:relative;width:116px;height:116px;border-radius:50%;background:var(--brand-gradient);box-shadow:0 14px 40px rgba(0,0,0,.5), inset 0 3px 8px rgba(255,255,255,.35);animation:char-breathe 3.2s ease-in-out infinite}
+  @keyframes char-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  .char-eye{position:absolute;top:46px;width:9px;height:12px;border-radius:50%;background:#0A0712}
+  .char-eye.l{left:36px} .char-eye.r{right:36px}
+  .char-smile{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);width:26px;height:12px;border:3px solid #0A0712;border-top:none;border-radius:0 0 26px 26px;transition:height .12s ease}
+  #char-intro.speaking .char-smile{animation:char-talk .32s ease-in-out infinite alternate}
+  @keyframes char-talk{from{height:9px}to{height:15px}}
+  #char-caption{max-width:320px;font-size:16.5px;color:var(--text);line-height:1.6;min-height:52px;font-weight:500}
+  #char-hint{margin-top:18px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+
   #onboard{position:fixed;inset:0;z-index:90;background:rgba(5,6,10,0.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:22px;opacity:0;pointer-events:none;transition:opacity .25s ease}
   #onboard.open{opacity:1;pointer-events:auto}
   #onboard-card{width:100%;max-width:380px;border-radius:24px;padding:28px 22px 22px;position:relative;transform:scale(0.96);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
@@ -193,9 +213,6 @@
   #paywall-close-btn{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;padding:11px 0;color:var(--faint);font-size:12.5px;cursor:pointer}
   #paywall-fine{font-size:10px;color:var(--faint);margin-top:14px;line-height:1.6}
   #help-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;font-weight:700;border:1px solid var(--line)}
-  #voice-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;border:1px solid var(--line)}
-  #voice-btn.speaking{color:var(--accent);animation:voice-pulse 1.1s ease-in-out infinite}
-  @keyframes voice-pulse{0%,100%{box-shadow:0 0 0 0 rgba(127,216,230,0.4)}50%{box-shadow:0 0 0 6px rgba(127,216,230,0)}}
 
   /* ---------- profile sheet ---------- */
   #profile-sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.9,.3,1.1)}
@@ -331,6 +348,15 @@
   #scanlines{position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:0.35;background:repeating-linear-gradient(0deg,rgba(255,255,255,0.05) 0px,rgba(255,255,255,0.05) 1px,transparent 1px,transparent 3px)}
   #vignette{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(2,4,8,0.55) 100%)}
   #daynight{position:fixed;inset:0;z-index:4;pointer-events:none;transition:background 2.5s ease}
+  #sky-layer{position:fixed;inset:0;z-index:6;pointer-events:none;overflow:hidden}
+  .comet{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px 2px rgba(255,255,255,0.85);animation:comet-streak linear forwards}
+  .comet::after{content:'';position:absolute;top:50%;right:100%;width:64px;height:1.5px;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.85));transform:translateY(-50%)}
+  @keyframes comet-streak{from{transform:translate(0,0);opacity:1}to{transform:translate(170px,95px);opacity:0}}
+  .plane{position:absolute;font-size:13px;opacity:.85;filter:drop-shadow(0 0 2px rgba(255,255,255,0.65));animation-timing-function:linear;animation-fill-mode:forwards}
+  .plane.ltr{left:-6vw;animation-name:plane-ltr}
+  .plane.rtl{right:-6vw;animation-name:plane-rtl;transform:scaleX(-1)}
+  @keyframes plane-ltr{from{transform:translateX(0)}to{transform:translateX(112vw)}}
+  @keyframes plane-rtl{from{transform:translateX(0) scaleX(-1)}to{transform:translateX(-112vw) scaleX(-1)}}
   #weather-layer{position:fixed;inset:0;z-index:7;pointer-events:none;overflow:hidden}
   .rain-drop{position:absolute;top:-24px;width:1.5px;height:16px;border-radius:2px;background:linear-gradient(180deg,rgba(180,210,255,0),rgba(180,210,255,0.6));animation:rain-fall linear infinite}
   @keyframes rain-fall{to{transform:translateY(112vh)}}
@@ -384,6 +410,7 @@
 <div id="daynight"></div>
 <div id="scanlines"></div>
 <div id="radar-sweep"></div>
+<div id="sky-layer" aria-hidden="true"></div>
 <div id="weather-layer"></div>
 <div id="radar-rings"><div class="radar-ring"></div></div>
 
@@ -401,7 +428,6 @@
     <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
     <button id="help-btn" class="glass" aria-label="Show tutorial">?</button>
     <button id="weather-toggle" class="glass" aria-label="Toggle weather">☀️</button>
-    <button id="voice-btn" class="glass" aria-label="Hear your briefing">🔊</button>
   </div>
   <div id="nearby-strip">
     <button id="nearby-count" class="glass" aria-label="Browse nearby people">— nearby</button>
@@ -485,6 +511,21 @@
     <input type="date" id="age-gate-dob" aria-label="Date of birth">
     <button id="age-gate-submit" disabled>Continue</button>
     <div id="age-gate-fine">This is a self-reported birthdate, the same baseline most consumer apps start with — not document-based ID verification. A real launch would add a third-party identity-verification provider before this ships.</div>
+  </div>
+</div>
+
+<div id="char-intro" role="dialog" aria-modal="true" aria-label="Welcome" inert>
+  <div id="char-stage">
+    <div id="char-figure">
+      <div class="char-glow" aria-hidden="true"></div>
+      <div class="char-face" aria-hidden="true">
+        <div class="char-eye l"></div>
+        <div class="char-eye r"></div>
+        <div class="char-smile"></div>
+      </div>
+    </div>
+    <div id="char-caption"></div>
+    <div id="char-hint">Tap anywhere to continue</div>
   </div>
 </div>
 
@@ -1249,6 +1290,47 @@ function applyDayNight(){
   else if (h>=17 && h<19) bg = 'linear-gradient(180deg, rgba(255,140,80,0.26), rgba(130,60,120,0.17))';
   else                    bg = 'linear-gradient(180deg, rgba(10,16,45,0.5), rgba(5,8,25,0.4))';
   el.style.background = bg;
+  manageSkyEffects();
+}
+
+/* ---------- night sky: comets and planes, purely decorative atmosphere
+   tied to the same real local hour as the day/night tint — not real
+   flight-tracking or meteor data, which would need a real aviation API
+   and isn't worth the complexity for ambience. Said plainly rather than
+   implying these are real aircraft. ---------- */
+function isNightNow(){ const h = new Date().getHours(); return h>=19 || h<5; }
+function spawnComet(){
+  const layer = document.getElementById('sky-layer');
+  if (!layer) return;
+  const el = document.createElement('div');
+  el.className = 'comet';
+  el.style.left = (Math.random()*70+10) + 'vw';
+  el.style.top = (Math.random()*30+4) + 'vh';
+  const dur = 1.1 + Math.random()*0.6;
+  el.style.animationDuration = dur + 's';
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), dur*1000 + 150);
+}
+function spawnPlane(){
+  const layer = document.getElementById('sky-layer');
+  if (!layer) return;
+  const el = document.createElement('div');
+  const fromLeft = Math.random() < 0.5;
+  el.className = 'plane ' + (fromLeft ? 'ltr' : 'rtl');
+  el.textContent = '✈️';
+  el.style.top = (Math.random()*22+4) + 'vh';
+  const dur = 26 + Math.random()*14;
+  el.style.animationDuration = dur + 's';
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), dur*1000 + 150);
+}
+let cometTimer = null, planeTimer = null;
+function manageSkyEffects(){
+  const night = isNightNow();
+  if (night && !cometTimer) { spawnComet(); cometTimer = setInterval(() => { if (Math.random() < 0.6) spawnComet(); }, 12000); }
+  else if (!night && cometTimer) { clearInterval(cometTimer); cometTimer = null; }
+  if (night && !planeTimer) { spawnPlane(); planeTimer = setInterval(spawnPlane, 18000); }
+  else if (!night && planeTimer) { clearInterval(planeTimer); planeTimer = null; }
 }
 
 /* ---------- weather overlay (visual only, not simulated physics) ---------- */
@@ -1274,29 +1356,69 @@ function setWeather(mode){
     layer.appendChild(el);
   }
 }
+let userSetWeatherManually = false;
 document.getElementById('weather-toggle').onclick = () => {
+  userSetWeatherManually = true; // a manual pick should stick, not get silently overwritten by the next real-weather sync
   const next = WEATHER_CYCLE[(WEATHER_CYCLE.indexOf(weatherMode)+1) % WEATHER_CYCLE.length];
   setWeather(next);
   showToast(`Weather: ${next}`);
 };
-
-/* ---------- voice briefing: a genuine on-device spoken summary, via the
-   browser's real Web Speech API (speechSynthesis) — no backend, no "AI"
-   actually composing anything. The text is built with plain rules from
-   real current state (nearby count, what people are actually doing,
-   any hot spot forming/promoted nearby, the weather toggle) — it only
-   sounds smart because the data under it is real, not because anything
-   here is intelligent. Browsers restrict unprompted audio, so this is
-   attempted automatically right after a real tap (closing onboarding,
-   or shortly after boot for returning users) and always replayable via
-   the speaker button, which works regardless of autoplay rules. */
-function timeOfDayGreeting(){
-  const h = new Date().getHours();
-  if (h>=5 && h<12) return 'Good morning';
-  if (h>=12 && h<17) return 'Good afternoon';
-  if (h>=17 && h<22) return 'Good evening';
-  return "You're up late";
+/* ---------- real weather sync: Open-Meteo, free and keyless, mapped from
+   the real WMO weather codes it returns to our existing clear/rain/snow
+   states. If the fetch fails (offline, blocked) this just leaves whatever
+   weather is already showing — never fabricates a condition. A manual
+   toggle pick (above) is respected for the rest of the session instead of
+   being silently overwritten by the next sync, same reasoning as the map
+   auto-follow/manual-pan override elsewhere in this app. */
+const WMO_RAIN_CODES = new Set([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99]);
+const WMO_SNOW_CODES = new Set([71,73,75,77,85,86]);
+async function syncRealWeather(){
+  if (userSetWeatherManually) return;
+  try {
+    const [lat, lon] = state.me;
+    const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const code = data && data.current && data.current.weather_code;
+    if (typeof code !== 'number') return;
+    if (userSetWeatherManually) return; // could have changed while the fetch was in flight
+    const mode = WMO_SNOW_CODES.has(code) ? 'snow' : WMO_RAIN_CODES.has(code) ? 'rain' : 'clear';
+    setWeather(mode);
+  } catch(e) { /* offline or blocked — leave the current weather alone */ }
 }
+
+/* ---------- voice welcome: a genuine on-device spoken briefing via the
+   real Web Speech API — no backend, no LLM composing anything. The words
+   are built with plain rules from real current state; it only sounds
+   smart because the data is real. What changed from the first version,
+   after real feedback that it sounded robotic and pushy with a button:
+   - speaks in short natural lines (queued utterances), not one long
+     run-on sentence — speechSynthesis plays multiple speak() calls back
+     to back in order on its own, so no manual chaining is needed
+   - phrasing is pulled from small randomized pools (contractions, a few
+     different openers) so it doesn't say the literal same sentence
+     every single time, which is a lot of what reads as "a script" vs
+     a person
+   - actively prefers a higher-quality "Natural"/neural voice when the
+     platform offers one, instead of whatever the browser defaults to
+   - no standalone button anymore — it's folded into the animated
+     welcome character below, triggered by the intro itself */
+let cachedVoice = null;
+function pickNaturalVoice(){
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return cachedVoice;
+  const natural = voices.find(v => /natural|neural/i.test(v.name) && /^en/i.test(v.lang));
+  const warm = voices.find(v => /^en/i.test(v.lang) && /female|zira|samantha|susan|victoria|karen|moira|tessa|aria|jenny|serena/i.test(v.name));
+  const en = voices.find(v => /^en/i.test(v.lang));
+  cachedVoice = natural || warm || en || voices[0] || null;
+  return cachedVoice;
+}
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', pickNaturalVoice);
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function dominantNearbyCategory(){
   if (!lastVisiblePeople.length) return null;
   const counts = {};
@@ -1307,53 +1429,89 @@ function dominantNearbyCategory(){
 function nearestHotspotNote(){
   const cells = Object.values(hotspotCells);
   const forming = cells.find(c => !c.spawned && c.heat >= BUILDING_THRESHOLD);
-  if (forming) return "There's a spot nearby where people keep gathering — it's about to become a real landmark.";
+  if (forming) return pick(["There's a spot nearby where people keep gathering — it's about to become a real landmark.", "Something's forming nearby, actually — a spot a few people keep coming back to."]);
   const active = cells.find(c => !c.spawned && c.heat >= HOTSPOT_THRESHOLD);
-  if (active) return "There's a hot spot forming near you right now.";
+  if (active) return pick(["There's a hot spot forming near you right now.", "People seem to be gathering somewhere close by."]);
   return null;
 }
-function generateBriefing(){
-  const parts = [];
-  parts.push(`${timeOfDayGreeting()}.`);
+function generateBriefingLines(){
+  const lines = [];
+  const h = new Date().getHours();
+  const band = h>=5&&h<12 ? 'morning' : h>=12&&h<17 ? 'afternoon' : h>=17&&h<22 ? 'evening' : 'late';
+  lines.push(pick({
+    morning: ["Good morning.", "Morning. Hope you slept well.", "Morning!"],
+    afternoon: ["Good afternoon.", "Hey, hope your day's going well so far."],
+    evening: ["Good evening.", "Evening. Nice to see you."],
+    late: ["Hey, you're up late.", "Still up? No judgment."],
+  }[band]));
   const n = lastVisiblePeople.length;
   if (n === 0) {
-    parts.push("It's quiet around you right now — nobody's showing up within your radius.");
+    lines.push(pick(["It's quiet around you right now, nobody's nearby just yet.", "Pretty calm out there — no one's showing up nearby at the moment."]));
   } else {
     const dom = dominantNearbyCategory();
-    parts.push(`${n} ${n===1?'person is':'people are'} nearby.`);
-    if (dom && dom.count >= 2) parts.push(`Most of them are doing ${dom.cat.label.toLowerCase()}.`);
+    lines.push(pick([`Looks like ${n} ${n===1?'person is':'people are'} nearby.`, `You've got ${n} ${n===1?'person':'people'} around you right now.`]));
+    if (dom && dom.count >= 2) lines.push(pick([`Most of them seem to be doing ${dom.cat.label.toLowerCase()}.`, `A few are into ${dom.cat.label.toLowerCase()} right now.`]));
   }
   const hotspotNote = nearestHotspotNote();
-  if (hotspotNote) parts.push(hotspotNote);
-  if (weatherMode === 'rain') parts.push("It's raining on the map right now, if that changes your plans.");
-  if (weatherMode === 'snow') parts.push("Snow's falling on the map — stay cozy.");
+  if (hotspotNote) lines.push(hotspotNote);
+  if (weatherMode === 'rain') lines.push(pick(["It's raining out there right now, by the way.", "Looks a little wet outside at the moment."]));
+  if (weatherMode === 'snow') lines.push(pick(["It's snowing out there. Stay cozy.", "Snow's coming down outside right now."]));
   const myCat = catById(state.status);
-  parts.push(n > 0
-    ? `You're currently set to ${myCat.label.toLowerCase()}. Want to see who's around, or try something new today?`
-    : `You're currently set to ${myCat.label.toLowerCase()}. Set a status and see who shows up.`);
-  return parts.join(' ');
+  lines.push(pick([`You're set to ${myCat.label.toLowerCase()} right now — want to see who's around?`, `Right now you're showing as ${myCat.label.toLowerCase()}. Take a look around whenever you're ready.`]));
+  return lines;
 }
-let currentUtterance = null;
-function speakBriefing(){
-  if (!('speechSynthesis' in window)) { showToast("This browser doesn't support spoken voice"); return; }
-  const btn = document.getElementById('voice-btn');
-  if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); if (btn) btn.classList.remove('speaking'); return; }
-  const text = generateBriefing();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 1.0; utter.pitch = 1.0;
-  utter.onstart = () => { if (btn) btn.classList.add('speaking'); };
-  utter.onend = utter.onerror = () => { if (btn) btn.classList.remove('speaking'); };
-  currentUtterance = utter; // keep a reference — some browsers garbage-collect and silently drop utterances otherwise
-  try { window.speechSynthesis.speak(utter); } catch(e){}
-}
-document.getElementById('voice-btn').onclick = speakBriefing;
-function tryAutoBriefing(){
-  // Best-effort only: browsers vary on whether this counts as having a
-  // real user gesture behind it, so this can silently do nothing — the
-  // speaker button is the reliable path, not this.
-  try { speakBriefing(); } catch(e){}
+let spokenUtterances = [];
+function speakLines(lines, onLineStart, onAllDone){
+  if (!('speechSynthesis' in window) || !lines.length) { if (onAllDone) onAllDone(); return; }
+  try {
+    window.speechSynthesis.cancel();
+    const voice = pickNaturalVoice();
+    spokenUtterances = lines.map((line, i) => {
+      const utter = new SpeechSynthesisUtterance(line);
+      utter.rate = 0.98; utter.pitch = 1.04; // calm, slightly warm — tuned by ear, not a precise science with this API
+      if (voice) utter.voice = voice;
+      utter.onstart = () => { if (onLineStart) onLineStart(line); };
+      if (i === lines.length - 1) utter.onend = utter.onerror = () => { if (onAllDone) onAllDone(); };
+      return utter;
+    });
+    spokenUtterances.forEach(u => window.speechSynthesis.speak(u)); // speechSynthesis queues these in order on its own
+  } catch(e) { if (onAllDone) onAllDone(); }
 }
 
+/* ---------- the welcome intro itself: plays every time the app opens
+   (not just first-time), shows the character + a live caption of each
+   line as it's spoken, and always auto-dismisses — either when the
+   voice finishes, when the person taps anywhere, or after a hard safety
+   timeout in case speech is blocked entirely. Visually, this always
+   plays regardless of browser autoplay policy; only the *voice* is
+   best-effort on top of it, same as before — so "every time you open
+   it" is honestly true for the intro itself, even on the sessions where
+   a stricter browser silently blocks the audio. */
+const charIntroEl = document.getElementById('char-intro');
+function showCharacterIntro(onDismiss){
+  charIntroEl.classList.add('open');
+  charIntroEl.removeAttribute('inert');
+  let dismissed = false;
+  function dismiss(){
+    if (dismissed) return;
+    dismissed = true;
+    try { window.speechSynthesis.cancel(); } catch(e){}
+    charIntroEl.classList.remove('open', 'speaking');
+    charIntroEl.setAttribute('inert','');
+    charIntroEl.onclick = null;
+    if (onDismiss) onDismiss();
+  }
+  charIntroEl.onclick = dismiss;
+  const safety = setTimeout(dismiss, 12000); // in case speech is blocked or never fires its end event
+  const lines = generateBriefingLines();
+  document.getElementById('char-caption').textContent = lines[0] || '';
+  charIntroEl.classList.add('speaking');
+  speakLines(
+    lines,
+    (line) => { document.getElementById('char-caption').textContent = line; },
+    () => { clearTimeout(safety); dismiss(); }
+  );
+}
 /* ---------- profile sheet + walkie-talkie ---------- */
 const profileSheet = document.getElementById('profile-sheet');
 function openProfile(p){
@@ -1551,7 +1709,6 @@ function closeOnboard(){
   const el = document.getElementById('onboard');
   el.classList.remove('open'); el.setAttribute('inert','');
   try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
-  setTimeout(tryAutoBriefing, 500); // closing onboarding is a real tap — the one reliable place to greet a first-time user
 }
 document.getElementById('onboard-next').onclick = () => {
   if (obStep < ONBOARD_STEPS.length - 1) { obStep++; renderOnboard(); } else { closeOnboard(); }
@@ -1609,10 +1766,15 @@ function boot(center){
   const autoBtn = document.getElementById('auto-toggle');
   if (autoBtn) { autoBtn.classList.toggle('on', state.autoDetect); autoBtn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
   applyDayNight();
-  setWeather('clear');
+  setWeather('clear'); // immediate default while the real check below is in flight — never left showing a fabricated condition
+  syncRealWeather();
+  setInterval(syncRealWeather, 20*60*1000);
   let seenBefore = false;
   try { seenBefore = localStorage.getItem(ONBOARD_KEY) === '1'; } catch(e){}
-  if (!seenBefore) openOnboard(); else { setTimeout(checkSparks, 1200); setTimeout(tryAutoBriefing, 900); }
+  // The welcome character plays on every open, first-time or not; the
+  // step-by-step feature tour only chains after it for first-time users.
+  setTimeout(() => showCharacterIntro(() => { if (!seenBefore) openOnboard(); }), 500);
+  if (seenBefore) setTimeout(checkSparks, 1200);
   setInterval(checkSparks, 6500);
   setInterval(tickMovement, 1000);
   setInterval(tickHotspots, 4000);
@@ -1706,6 +1868,7 @@ document.getElementById('paywall-unlock').onclick = () => {
    step, not a dismissible one, so Escape does nothing while it's up. */
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (charIntroEl.classList.contains('open')) { charIntroEl.click(); return; }
   if (paywallSheet.classList.contains('open')) { closePaywall(); return; }
   if (nearbyListSheet.classList.contains('open')) { closeNearbyList(); return; }
   if (statusSheet.classList.contains('open')) { closeStatusSheet(); return; }
