@@ -14,9 +14,13 @@
     background:repeating-linear-gradient(to bottom, #fff 0px, #fff 1px, transparent 1px, transparent 3px);}
   .vignette{position:absolute; inset:0; pointer-events:none; box-shadow:inset 0 0 160px 60px rgba(0,0,0,.65);}
   .scene{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .5s ease; padding:40px 32px; text-align:center;}
+    opacity:0; transition:opacity .4s ease; padding:40px 32px; text-align:center;}
   .scene.active{opacity:1;}
   .sub{margin-top:26px; font-size:19px; color:#e9eefb; line-height:1.5; max-width:300px; font-weight:500;}
+
+  .midroll .big{font-size:34px; font-weight:800; color:#fff;}
+  .midroll .arrow{font-size:30px; color:var(--cyan); margin-top:14px; animation:nudge 1.1s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)}}
 
   .ptt-wrap{position:relative; width:140px; height:140px; display:flex; align-items:center; justify-content:center;}
   .ring{position:absolute; border-radius:50%; border:2px solid var(--red); opacity:0;
@@ -51,6 +55,11 @@
   <div class="scanlines"></div>
   <div id="progress"></div>
 
+  <div class="scene midroll" id="p_mid">
+    <div class="big">Sound like you?</div>
+    <div class="arrow">&#8595;</div>
+  </div>
+
   <div class="scene" id="p0">
     <div class="ptt-wrap">
       <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
@@ -68,8 +77,8 @@
   <div class="vignette"></div>
 </div>
 <script>
-  const scenes = ['p0','p1'];
-  const durations = [5200, 5000];
+  const scenes = ['p_mid','p0','p1'];
+  const durations = [2600, 4040, 4240]; // ms, matched to narration track
   const prog = document.getElementById('progress');
   scenes.forEach(()=>{ const d=document.createElement('div'); const s=document.createElement('span'); d.appendChild(s); prog.appendChild(d); });
   const bars = prog.children;
