@@ -12,7 +12,10 @@
 <meta name="apple-mobile-web-app-title" content="Hang" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>Hang — concept demo</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<!-- Real 3D map engine (WebGL vector tiles, tiltable camera, true
+     building extrusion) — replaced Leaflet, which can only ever render a
+     flat 2D plane no matter how much CSS is layered on top of it. -->
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="" />
 <style>
   :root{
     /* 2026 refresh: warm-tuned near-black instead of flat navy, a signature
@@ -63,10 +66,18 @@
      flat recolor — then a small rotate nudges the remaining warmth from
      brown toward the mural's orange/teal split, with brightness/contrast
      to read like worn concrete rather than a muddy dark photo. */
-  .leaflet-tile-pane{filter:sepia(0.65) saturate(1.3) hue-rotate(-8deg) brightness(1.14) contrast(1.08)}
-  .leaflet-control-attribution{background:rgba(250,238,210,0.55)!important;color:var(--muted)!important;font-size:9px!important}
-  .leaflet-control-attribution a{color:var(--text)!important}
-  .leaflet-control-zoom{display:none}
+  .maplibregl-canvas{filter:sepia(0.65) saturate(1.3) hue-rotate(-8deg) brightness(1.14) contrast(1.08)}
+  .maplibregl-ctrl-attrib{background:rgba(250,238,210,0.55)!important;font-size:9px!important}
+  .maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib{color:var(--muted)!important}
+  .maplibregl-ctrl-attrib-button{filter:invert(0.3) sepia(0.3)}
+  /* compass control (tap to re-level the camera after rotating it) —
+     restyled to match the warm glass theme instead of MapLibre's default
+     white squares; zoom buttons stay hidden, same call as before
+     (redundant with pinch/scroll) */
+  .maplibregl-ctrl-group{background:var(--panel)!important;border:1px solid var(--line)!important;box-shadow:0 8px 28px rgba(40,24,10,0.35)!important;border-radius:10px!important;overflow:hidden}
+  .maplibregl-ctrl-group button{background:transparent!important}
+  .maplibregl-ctrl-group button:hover{background:rgba(74,48,20,0.08)!important}
+  #geo-overlay{position:absolute;inset:0;z-index:6;pointer-events:none;width:100%;height:100%;overflow:visible}
   /* Worn paper/concrete grain over the whole map — tiles AND the
      characters standing on them — so the illustrated mascots read as
      part of the same painted surface instead of being pasted on top of
@@ -376,30 +387,6 @@
   /* static decorative "real life objects" */
   .landmark{font-size:17px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55))}
 
-  /* Real buildings, not a flat emoji sticker: a small CSS-extruded block
-     (front wall + a thin shaded side + a roof cap), so zooming in reads
-     like looking down at an actual 3D structure from above — the
-     satellite-view feel the map is going for. Pure CSS (no 3D engine
-     available in a static HTML file), so it's a believable isometric-
-     style fake rather than a true extrusion, but it genuinely has a
-     front face, a shadowed side face and a roof, not just a glyph.
-     Scales up at closer zoom via --bscale (set per-tier in JS, since
-     Leaflet markers don't re-flow on their own as you zoom). */
-  .building3d{position:relative;width:100%;height:100%;transform:scale(var(--bscale,1));transform-origin:50% 100%}
-  .building3d .b-side{position:absolute;right:-4px;bottom:3px;width:7px;height:72%;
-    background:var(--wall-dark,#9c8a66);border-radius:0 2px 2px 0;
-    box-shadow:inset -2px 0 3px rgba(0,0,0,0.35)}
-  .building3d .b-front{position:absolute;left:0;bottom:3px;width:100%;height:72%;
-    background:var(--wall,#E8D9B8);border-radius:2px 1px 1px 2px;
-    background-image:repeating-linear-gradient(to bottom, rgba(40,25,10,0.22) 0 1.5px, transparent 1.5px 7px),
-                      repeating-linear-gradient(to right, rgba(40,25,10,0.14) 0 1px, transparent 1px 6px);
-    box-shadow:0 2px 4px rgba(30,18,8,0.5), inset 0 1px 0 rgba(255,255,255,0.3)}
-  .building3d .b-roof{position:absolute;left:-12%;top:0;width:124%;height:32%;
-    background:var(--roof,#C9622E);clip-path:polygon(6% 100%,50% 0%,94% 100%);
-    filter:brightness(1.06);box-shadow:0 1px 2px rgba(30,18,8,0.45)}
-  .building3d .b-tag{position:absolute;left:50%;top:-3px;transform:translateX(-50%);font-size:11px;
-    filter:drop-shadow(0 1px 2px rgba(30,18,8,0.6))}
-
   /* community spot: a permanent landmark that "grew" because people kept
      meeting in the same place, instead of being pre-placed decoration */
   .landmark.community-spot{font-size:26px;position:relative;filter:drop-shadow(0 0 8px rgba(255,180,74,0.8))}
@@ -489,6 +476,7 @@
 
 <main aria-label="Hang — live map">
 <div id="map"></div>
+<svg id="geo-overlay" aria-hidden="true"></svg>
 <div id="map-grain" aria-hidden="true"></div>
 <div id="vignette"></div>
 <div id="daynight"></div>
@@ -628,14 +616,16 @@
 </div>
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin=""></script>
 <script>
 /* =========================================================================
    HANG — concept demo
    -------------------------------------------------------------------------
    Single-file prototype to validate look/feel before committing to a real
    mobile stack. Sample people + positions are generated locally; nothing
-   is sent anywhere. Uses Leaflet (CDN) for the map. The Walkie-Talkie
+   is sent anywhere. Uses MapLibre GL (CDN) + OpenFreeMap for a real 3D
+   map — true extruded buildings, a tiltable/rotatable camera — instead
+   of a flat 2D tile layer. The Walkie-Talkie
    button uses the real microphone (MediaRecorder) and plays your own
    recording back as a local echo — there is no backend yet, so it can't
    reach another real person. That's the next phase, not this one.
@@ -662,15 +652,15 @@ window.addEventListener('unhandledrejection', e => {
   emergencyToast('Something glitched — try refreshing if things look off');
 });
 
-// Leaflet loads from a CDN via a classic <script> tag above. If that
-// fails (offline, CDN down, ad blocker), `L` is undefined and the very
-// next block below would throw immediately, leaving a blank dark screen
-// with zero explanation. Fail loudly and clearly instead.
-if (typeof L === 'undefined') {
+// MapLibre GL loads from a CDN via a classic <script> tag above. If that
+// fails (offline, CDN down, ad blocker), `maplibregl` is undefined and
+// the very next block below would throw immediately, leaving a blank
+// dark screen with zero explanation. Fail loudly and clearly instead.
+if (typeof maplibregl === 'undefined') {
   document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;background:#0A0712;color:#F5F3FF;font-family:-apple-system,system-ui,sans-serif;font-size:15px;line-height:1.6;">
     Hang couldn't load the map library from its CDN — check your connection (or an ad/script blocker) and reload the page.
   </div>`;
-  throw new Error('Leaflet failed to load from CDN');
+  throw new Error('MapLibre GL failed to load from CDN');
 }
 
 const CATEGORIES = [
@@ -790,24 +780,15 @@ const PEOPLE_COUNT = 300;
 // is showing people at their *actual* real-world location so you can go
 // meet them — replacing the real map with a fully invented Clash-of-
 // Clans-style terrain would break that premise outright, not just be a
-// lot of work. What's genuinely buildable here is decorating the *real*
-// map with real building variety, the same way a city actually has a mix
-// of houses, shops and offices — not just scattered trees — so the world
-// reads as a built place layered on real streets, not a park.
-const LANDMARK_ICONS = [
-  { icon:'🏠', building:true }, { icon:'🏠', building:true }, { icon:'🏠', building:true },
-  { icon:'🏢', building:true }, { icon:'🏢', building:true },
-  { icon:'🏬', building:true }, { icon:'🏪', building:true }, { icon:'🏪', building:true },
-  { icon:'🏦', building:true }, { icon:'🏨', building:true }, { icon:'🏫', building:true },
-  { icon:'☕', building:true },
-  { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' }, { icon:'🌳' },
-  { icon:'🌲' }, { icon:'🌲' }, { icon:'🌲' },
-  { icon:'🪑' }, { icon:'🪑' }, { icon:'🪑' },
-  { icon:'⛲' }, { icon:'🚏' }, { icon:'🚏' }, { icon:'🅿️' }, { icon:'🚦' },
-];
-function genLandmarks(center){
-  return LANDMARK_ICONS.map((l, i) => ({ id:'lm'+i, icon:l.icon, building:!!l.building, pos: jitterKm(center[0], center[1], 3.2) }));
-}
+// lot of work. The real map now carries real building variety itself
+// (genuine OpenStreetMap geometry, rendered as true 3D extrusions by
+// the map engine — see MapShim._add3dBuildings above), which is what
+// the fake jittered "decorate with building emoji" landmarks below used
+// to stand in for; with the real thing available, the fake one is gone,
+// not kept alongside it. state.landmarks now holds only the app's own
+// data the base map could never show — hotspot/community-spot markers
+// (see tickHotspots) — starting empty each boot and filled in as spots
+// are detected or rehydrated from a previous session.
 
 function genPeople(center){
   const out = [];
@@ -934,24 +915,195 @@ function tickHotspots(){
   renderHotspots();
 }
 
-/* ---------- map setup ---------- */
-const map = L.map('map', { zoomControl:false, attributionControl:true, maxZoom:16, minZoom:10 }).setView(state.me, 13);
-// Switched from Esri World_Topo_Map (near-white basemap, almost no raw
-// color to work with) to standard OSM tiles — these actually render
-// residential/commercial land use as a pale tan/peach fill and water as
-// blue, giving the CSS color-grade filter below real material to push
-// into "painted orange city blocks, teal water" instead of mostly gray.
-const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'&copy; OpenStreetMap contributors', maxZoom:19, subdomains:'abc'
-}).addTo(map);
+/* ---------- map setup: a real 3D world ----------
+   Leaflet can only ever draw a flat 2D plane, no matter how much CSS
+   "fake 3D" gets layered on top of it — every "make the buildings 3D"
+   pass before this one was working around that ceiling, not past it.
+   MapLibre GL renders real vector-tile geometry in WebGL with an
+   actual tiltable/rotatable camera, so buildings here are true
+   extruded 3D geometry (real height data from OpenStreetMap, not a
+   CSS box with a roof glued on), and the whole map can be pitched and
+   spun like a real 3D scene — the GTA/Clash-of-Clans camera angle
+   that's been asked for from the very first message in this thread.
+   Tiles: OpenFreeMap (tiles.openfreemap.org) — free, unlimited, no API
+   key, no signup; same "no backend" constraint this whole app runs
+   under. Below is a small compatibility layer (an `L` with the handful
+   of Leaflet methods this file actually calls, and a MapShim with
+   Leaflet-shaped getZoom/setView/panTo/getBounds/fitBounds) so the
+   ~50 existing call sites elsewhere in this file — render(), the
+   clustering/viewport-cap logic, the radius button, geolocation
+   auto-follow, the spark line — keep working essentially unchanged.
+   The real engine swap happens once, here. */
+const toLngLat = ([lat, lon]) => [lon, lat];
+const toLatLng = ([lon, lat]) => [lat, lon];
+
+class BoundsShim {
+  constructor(south, west, north, east){ this.south=south; this.west=west; this.north=north; this.east=east; }
+  pad(frac){
+    const latPad = (this.north - this.south) * frac, lonPad = (this.east - this.west) * frac;
+    return new BoundsShim(this.south-latPad, this.west-lonPad, this.north+latPad, this.east+lonPad);
+  }
+  contains([lat, lon]){ return lat >= this.south && lat <= this.north && lon >= this.west && lon <= this.east; }
+}
+
+// Minimal L.marker/L.divIcon shim: a "divIcon" is just the plain
+// {html, iconSize, iconAnchor} data Leaflet always treated it as: real
+// rendering is a MapLibre Marker hosting that HTML as its element,
+// translating Leaflet's anchor-from-top-left convention into
+// MapLibre's anchor+offset so every iconAnchor value already tuned
+// throughout this file still lines up pixel-for-pixel.
+const L = {
+  divIcon(opts){ return { html: opts.html, iconSize: opts.iconSize, iconAnchor: opts.iconAnchor }; },
+  marker(pos, opts = {}){ return new MarkerShim(pos, opts); },
+  polyline(latlngs, opts){ return new OverlayShapeShim('polyline', latlngs, opts); },
+};
+class MarkerShim {
+  constructor(pos, opts){
+    this._pos = pos;
+    this._listeners = {};
+    const el = document.createElement('div');
+    el.style.pointerEvents = opts.interactive === false ? 'none' : 'auto';
+    this._applyIcon(el, opts.icon);
+    if (opts.interactive !== false){
+      el.addEventListener('click', e => { e.stopPropagation(); (this._listeners.click||[]).forEach(fn=>fn()); });
+    }
+    this._el = el;
+    const anchor = opts.icon ? opts.icon.iconAnchor : [0,0];
+    this._gl = new maplibregl.Marker({ element: el, anchor:'top-left', offset:[-anchor[0], -anchor[1]] })
+      .setLngLat(toLngLat(pos));
+    if (opts.zIndexOffset) el.style.zIndex = String(1000 + opts.zIndexOffset);
+  }
+  _applyIcon(el, icon){
+    if (!icon) return;
+    el.innerHTML = icon.html;
+    el.style.width = icon.iconSize[0]+'px';
+    el.style.height = icon.iconSize[1]+'px';
+  }
+  addTo(map){ this._gl.addTo(map._gl); return this; }
+  on(evt, fn){ (this._listeners[evt] = this._listeners[evt]||[]).push(fn); return this; }
+  getElement(){ return this._el; }
+  setLatLng(pos){ this._pos = pos; this._gl.setLngLat(toLngLat(pos)); return this; }
+  setIcon(icon){ this._applyIcon(this._el, icon); return this; }
+  remove(){ this._gl.remove(); }
+}
+
+// Radius circle + spark line: drawn as a projected SVG overlay (see
+// #geo-overlay) rather than a GL fill/line layer, for two real reasons
+// — it needs no style-load wait (a GL layer can't be added until the
+// vector style finishes loading; this can draw the instant the map
+// exists), and projecting each ground point individually through the
+// *real* 3D camera means the radius ring correctly foreshortens into
+// an ellipse under the tilted view, the way an actual circle drawn on
+// the ground would — a flat screen-space SVG circle wouldn't do that.
+const geoOverlayEl = document.getElementById('geo-overlay');
+const activeOverlayShapes = new Set();
+function circlePoints([lat,lon], radiusKm, n=72){
+  const pts = [];
+  for (let i=0;i<n;i++) pts.push(destPoint(lat, lon, (360/n)*i, radiusKm));
+  return pts;
+}
+class OverlayShapeShim {
+  constructor(kind, latlngsOrCenter, opts){
+    this._kind = kind; // 'circle' | 'polyline'
+    this._opts = opts || {};
+    this._el = document.createElementNS('http://www.w3.org/2000/svg', kind === 'circle' ? 'polygon' : 'polyline');
+    if (this._opts.className) this._el.setAttribute('class', this._opts.className);
+    this._el.setAttribute('fill', kind === 'circle' ? (this._opts.fillColor || 'none') : 'none');
+    this._el.setAttribute('fill-opacity', String(this._opts.fillOpacity != null ? this._opts.fillOpacity : 0));
+    this._el.setAttribute('stroke', this._opts.color || '#2F8F86');
+    this._el.setAttribute('stroke-width', String(this._opts.weight || 1));
+    this._el.setAttribute('stroke-opacity', String(this._opts.opacity != null ? this._opts.opacity : 1));
+    if (this._opts.dashArray) this._el.setAttribute('stroke-dasharray', this._opts.dashArray);
+    if (kind === 'circle') { this._center = latlngsOrCenter; this._radiusKm = (this._opts.radius||0)/1000; }
+    else { this._latlngs = latlngsOrCenter; }
+  }
+  addTo(mapShim){ geoOverlayEl.appendChild(this._el); activeOverlayShapes.add(this); this._refresh(mapShim._gl); return this; }
+  setLatLng(pos){ this._center = pos; this._refresh(map._gl); return this; }
+  setRadius(meters){ this._radiusKm = meters/1000; this._refresh(map._gl); return this; }
+  getBounds(){
+    const n = destPoint(this._center[0], this._center[1], 0, this._radiusKm)[0];
+    const s = destPoint(this._center[0], this._center[1], 180, this._radiusKm)[0];
+    const e = destPoint(this._center[0], this._center[1], 90, this._radiusKm)[1];
+    const w = destPoint(this._center[0], this._center[1], 270, this._radiusKm)[1];
+    return new BoundsShim(s, w, n, e);
+  }
+  _refresh(glMap){
+    const latlngs = this._kind === 'circle' ? circlePoints(this._center, this._radiusKm) : this._latlngs;
+    const screen = latlngs.map(([lat,lon]) => { const p = glMap.project(toLngLat([lat,lon])); return `${p.x},${p.y}`; }).join(' ');
+    this._el.setAttribute('points', screen);
+  }
+  remove(){ this._el.remove(); activeOverlayShapes.delete(this); }
+}
+L.circle = (pos, opts) => new OverlayShapeShim('circle', pos, opts);
+
+class MapShim {
+  constructor(containerId, { center, zoom, maxZoom, minZoom }){
+    this._gl = new maplibregl.Map({
+      container: containerId,
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: toLngLat(center), zoom, maxZoom, minZoom,
+      pitch: 55, bearing: -17, // the GTA-style tilted/rotated camera, not straight-down
+      attributionControl: false,
+    });
+    this._gl.addControl(new maplibregl.AttributionControl({ compact:true }));
+    // Compass-only control (tap to re-level after spinning the camera) —
+    // zoom buttons are redundant with pinch/scroll and were hidden in
+    // the Leaflet version for the same reason.
+    this._gl.addControl(new maplibregl.NavigationControl({ showZoom:false, showCompass:true, visualizePitch:true }), 'top-right');
+    this._gl.on('load', () => this._add3dBuildings());
+    this._gl.on('move', () => activeOverlayShapes.forEach(s => s._refresh(this._gl)));
+  }
+  _add3dBuildings(){
+    // Real building geometry + height from the vector tiles themselves
+    // — genuine 3D, not a CSS box standing in for one. Falls back to a
+    // flat-but-still-real map if a given style has no building layer.
+    try {
+      const sources = this._gl.getStyle().sources;
+      const vecSrc = Object.keys(sources).find(id => sources[id].type === 'vector');
+      if (!vecSrc) return;
+      this._gl.addLayer({
+        id: 'hang-3d-buildings', source: vecSrc, 'source-layer': 'building',
+        type: 'fill-extrusion', minzoom: 14,
+        paint: {
+          'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get','render_height'], 6],
+            0, '#E8D9B8', 15, '#C9622E', 40, '#8B3A3A', 100, '#5A6672'],
+          'fill-extrusion-height': ['coalesce', ['get','render_height'], 6],
+          'fill-extrusion-base': ['coalesce', ['get','render_min_height'], 0],
+          'fill-extrusion-opacity': 0.88,
+        },
+      });
+    } catch(e) { /* style without a usable building layer — map still fully works, just flat */ }
+  }
+  getZoom(){ return this._gl.getZoom(); }
+  setView(pos, zoom, opts){
+    const target = { center: toLngLat(pos) };
+    if (zoom != null) target.zoom = zoom;
+    if (opts && opts.animate) this._gl.easeTo({ ...target, duration:700 });
+    else this._gl.jumpTo(target);
+  }
+  panTo(pos){ this._gl.panTo(toLngLat(pos)); return this; }
+  getBounds(){
+    const b = this._gl.getBounds();
+    return new BoundsShim(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
+  }
+  fitBounds(bounds, opts = {}){
+    this._gl.fitBounds([[bounds.west, bounds.south],[bounds.east, bounds.north]],
+      { maxZoom: opts.maxZoom, duration: opts.animate === false ? 0 : 1000 });
+    return this;
+  }
+  on(evt, fn){ this._gl.on(evt, fn); return this; }
+  removeLayer(marker){ if (marker && marker.remove) marker.remove(); }
+}
+
+const map = new MapShim('map', { center: state.me, zoom: 13, maxZoom:19, minZoom:10 });
 let tileErrorShown = false;
-tileLayer.on('tileerror', () => {
-  if (tileErrorShown) return; // don't spam a toast per failed tile — once is enough to inform
+map._gl.on('error', () => {
+  if (tileErrorShown) return; // don't spam a toast per failed tile/style request — once is enough to inform
   tileErrorShown = true;
   emergencyToast('Map tiles failed to load — check your connection');
 });
 
-let radiusCircle = L.circle(state.me, { radius: state.radius*1000, color:'#2F8F86', weight:1, fillColor:'#2F8F86', fillOpacity:0.06, id:'radius-circle' }).addTo(map);
+let radiusCircle = L.circle(state.me, { radius: state.radius*1000, color:'#2F8F86', weight:1, fillColor:'#2F8F86', fillOpacity:0.06 }).addTo(map);
 let meMarker = null;
 let peopleMarkers = {};
 let clusterMarkers = {};
@@ -987,34 +1139,11 @@ function personIcon(p, sparked){
 function clusterIcon(count, cat){
   return L.divIcon({ className:'', html:`<div class="cluster-blip" style="--cgrad:${cat.grad}"><span class="cluster-ic">${cat.icon}</span><span class="cluster-count">${count}</span></div>`, iconSize:[52,52], iconAnchor:[26,26] });
 }
-// Per building-type wall/roof colors, tuned to the warm painted-mural
-// palette so these read as part of the same world as the map tiles.
-const BUILDING_COLORS = {
-  '🏠': { wall:'#E8D9B8', wallDark:'#C2AE82', roof:'#C9622E' },
-  '🏢': { wall:'#AEB8C2', wallDark:'#8891A0', roof:'#5A6672' },
-  '🏬': { wall:'#E0C68A', wallDark:'#B89B5C', roof:'#8B3A3A' },
-  '🏪': { wall:'#E0C68A', wallDark:'#B89B5C', roof:'#D98A3D' },
-  '🏦': { wall:'#D8CFC0', wallDark:'#AFA38C', roof:'#C7BFAF' },
-  '🏨': { wall:'#E8DCC3', wallDark:'#C4B68F', roof:'#2F8F86' },
-  '🏫': { wall:'#C97A5A', wallDark:'#9C5A3E', roof:'#7A3426' },
-  '☕': { wall:'#D9B97A', wallDark:'#AE8F52', roof:'#6B4226' },
-};
-// Building markers scale up at closer zoom (set per-tier by renderLandmarks),
-// so looking straight down reads more like real 3D structures the closer
-// you get — the "satellite view" feel — instead of a fixed-size sticker.
-const BUILDING_TIERS = { sm:{ bscale:0.8, size:[26,34] }, md:{ bscale:1.25, size:[36,50] }, lg:{ bscale:1.85, size:[52,74] } };
-function buildingZoomTier(zoom){ return zoom >= 17 ? 'lg' : zoom >= 15 ? 'md' : 'sm'; }
-function landmarkIcon(icon, community, building, tier){
-  if (building && !community) {
-    const c = BUILDING_COLORS[icon] || { wall:'#E0D2AE', wallDark:'#B8A77E', roof:'#A5673A' };
-    const t = BUILDING_TIERS[tier] || BUILDING_TIERS.md;
-    const style = `--wall:${c.wall};--wall-dark:${c.wallDark};--roof:${c.roof};--bscale:${t.bscale}`;
-    return L.divIcon({ className:'', html:`<div class="building3d" style="${style}"><div class="b-side"></div><div class="b-front"></div><div class="b-roof"></div><div class="b-tag">${icon}</div></div>`, iconSize:t.size, iconAnchor:[t.size[0]/2, t.size[1]-4] });
-  }
-  const cls = community ? 'landmark community-spot' : 'landmark';
-  const size = community ? [34,38] : [22,26];
-  const anchor = community ? [17,32] : [11,22];
-  return L.divIcon({ className:'', html:`<div class="${cls}">${icon}${community?'<div class="community-ring"></div>':''}</div>`, iconSize:size, iconAnchor:anchor });
+// state.landmarks only ever holds community-spot entries now (real
+// buildings come from the map itself — see MapShim._add3dBuildings), so
+// this no longer needs a building/tier branch at all.
+function landmarkIcon(icon){
+  return L.divIcon({ className:'', html:`<div class="landmark community-spot">${icon}<div class="community-ring"></div></div>`, iconSize:[34,38], iconAnchor:[17,32] });
 }
 function hotspotIcon(heat){
   const strength = Math.min(1, heat / COMMUNITY_THRESHOLD);
@@ -1056,7 +1185,7 @@ function renderClusters(visible){
     const dominantCat = catById(Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0]);
     if (!clusterMarkers[key]) {
       const m = L.marker([lat,lon], { icon: clusterIcon(members.length, dominantCat) });
-      m.on('click', () => map.setView([lat,lon], Math.min(map.getZoom()+3, 16)));
+      m.on('click', () => map.setView([lat,lon], Math.min(map.getZoom()+3, 16), { animate:true }));
       m.addTo(map);
       const el = m.getElement();
       if (el) el.setAttribute('aria-label', `${members.length} ${members.length===1?"person":"people"} nearby, mostly ${dominantCat.label.toLowerCase()} — zoom in`);
@@ -1089,10 +1218,9 @@ function renderDetail(visible){
       const m = L.marker(p.pos, { icon: personIcon(p, sparkedIds.has(p.id)) });
       m.on('click', () => openProfile(p));
       m.addTo(map);
-      // Leaflet's `alt` marker option only becomes an accessible name for
-      // plain image icons, not divIcon markers — set it directly so
-      // screen reader users get more than "button" for each of the 300
-      // simulated people.
+      // A marker's element is a plain div with no automatic accessible
+      // name — set one directly so screen reader users get more than
+      // "button" for each of the 300 simulated people.
       const el = m.getElement();
       if (el) el.setAttribute('aria-label', `${p.name} — ${catById(p.cat).label}, open profile`);
       peopleMarkers[p.id] = m;
@@ -1140,28 +1268,20 @@ function renderSpots(visible){
 // the list of landmarks, or whether they should be visible at this zoom.
 let landmarksDirty = true;
 let lastLandmarksVisible = null;
-let lastBuildingTier = null;
 function renderLandmarks(){
-  const zoom = map.getZoom();
-  const visible = zoom >= 13; // decluttered when zoomed out, same as the GTA-style LOD for people
-  const tier = buildingZoomTier(zoom);
-  if (!landmarksDirty && visible === lastLandmarksVisible && tier === lastBuildingTier) return; // nothing changed — skip the rebuild
+  const visible = map.getZoom() >= 13; // decluttered when zoomed out, same as the GTA-style LOD for people
+  if (!landmarksDirty && visible === lastLandmarksVisible) return; // nothing changed — skip the rebuild
   landmarksDirty = false;
   lastLandmarksVisible = visible;
-  lastBuildingTier = tier;
   landmarkMarkers.forEach(m => map.removeLayer(m));
   landmarkMarkers = [];
   if (!visible) return;
   (state.landmarks||[]).forEach(l => {
-    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon, l.community, l.building, tier), interactive: !!l.community, zIndexOffset: l.community ? -100 : (l.building ? -300 : -500) });
-    if (l.community) {
-      m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
-      m.addTo(map);
-      const el = m.getElement();
-      if (el) el.setAttribute('aria-label', `${l.label || 'Regular spot'} — people keep gathering here`);
-    } else {
-      m.addTo(map);
-    }
+    const m = L.marker(l.pos, { icon: landmarkIcon(l.icon), zIndexOffset:-100 });
+    m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
+    m.addTo(map);
+    const el = m.getElement();
+    if (el) el.setAttribute('aria-label', `${l.label || 'Regular spot'} — people keep gathering here`);
     landmarkMarkers.push(m);
   });
 }
@@ -1326,8 +1446,6 @@ function renderRadius(){
       // Picking a radius should actually show that radius — fit the view
       // to the new circle so a 10km pick doesn't leave you zoomed in on
       // a few square blocks of it, wondering where everyone went.
-      // (radiusCircle, not a fresh L.circle: a circle never added to the
-      // map has no projection context and getBounds() throws on it.)
       map.fitBounds(radiusCircle.getBounds(), { maxZoom:16, animate:true });
       savePrefs();
       showToast(`Showing people within ${r} km`);
@@ -1897,7 +2015,7 @@ function boot(center){
   state.me = center;
   loadPrefs();
   // The map is created at a hardcoded default center before the user's
-  // real location is known (see the L.map(...) call above) — it has to be
+  // real location is known (see `new MapShim(...)` above) — it has to be
   // re-centered here once we actually know where they are, or everything
   // below gets generated around the real location while the camera stays
   // parked on the default. Zoom 14 (not 13) so individually-rendered
@@ -1905,7 +2023,7 @@ function boot(center){
   // visible immediately, instead of only the clustered zoomed-out view.
   map.setView(center, 14);
   state.people = genPeople(center);
-  state.landmarks = genLandmarks(center);
+  state.landmarks = []; // only ever holds community-spot entries now — real buildings come from the map itself
   loadHotspots();
   // state.landmarks is rebuilt from scratch every boot, but a community
   // spot that was already promoted (spawned:true) in a *previous* session
