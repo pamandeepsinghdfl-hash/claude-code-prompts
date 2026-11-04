@@ -965,7 +965,17 @@ class MarkerShim {
     el.style.pointerEvents = opts.interactive === false ? 'none' : 'auto';
     this._applyIcon(el, opts.icon);
     if (opts.interactive !== false){
-      el.addEventListener('click', e => { e.stopPropagation(); (this._listeners.click||[]).forEach(fn=>fn()); });
+      // Leaflet gave every interactive marker role="button" + tabindex
+      // automatically (its built-in keyboard-accessibility support) —
+      // MapLibre's Marker doesn't, so a bare aria-labelled <div> with no
+      // role is both an ARIA violation (axe: aria-prohibited-attr) and a
+      // real functional regression (unreachable by keyboard). Replicate
+      // what Leaflet did rather than just silencing the attribute.
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      const activate = e => { e.stopPropagation(); (this._listeners.click||[]).forEach(fn=>fn()); };
+      el.addEventListener('click', activate);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(e); } });
     }
     this._el = el;
     const anchor = opts.icon ? opts.icon.iconAnchor : [0,0];
@@ -1055,22 +1065,45 @@ class MapShim {
   }
   _add3dBuildings(){
     // Real building geometry + height from the vector tiles themselves
-    // — genuine 3D, not a CSS box standing in for one. Falls back to a
-    // flat-but-still-real map if a given style has no building layer.
+    // — genuine 3D, not a CSS box standing in for one. Colored by a
+    // per-building hash (not height) into a vivid, varied Clash-of-
+    // Clans-style palette — height-based coloring put almost every
+    // building in the same orange/cream band (most buildings in any
+    // real city are short-to-medium), which read as flat and samey
+    // rather than like a toy city. `fill-extrusion-vertical-gradient`
+    // adds real light/shadow shading up each facade instead of a flat
+    // single-tone fill. A thin roofline-edge layer on top keeps every
+    // building crisply outlined instead of blurring into its neighbors.
+    // Falls back to a flat-but-still-real map if a style has no
+    // building layer.
     try {
       const sources = this._gl.getStyle().sources;
       const vecSrc = Object.keys(sources).find(id => sources[id].type === 'vector');
       if (!vecSrc) return;
+      const buildingColor = ['match', ['%', ['id'], 7],
+        0, '#D64545', // brick red
+        1, '#2F8F86', // teal
+        2, '#E8A33D', // golden orange
+        3, '#4A6FA5', // royal blue
+        4, '#8A5FC9', // violet
+        5, '#5FA85F', // forest green
+        /* 6 */ '#C9622E', // terracotta
+      ];
       this._gl.addLayer({
         id: 'hang-3d-buildings', source: vecSrc, 'source-layer': 'building',
         type: 'fill-extrusion', minzoom: 14,
         paint: {
-          'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get','render_height'], 6],
-            0, '#E8D9B8', 15, '#C9622E', 40, '#8B3A3A', 100, '#5A6672'],
+          'fill-extrusion-color': buildingColor,
           'fill-extrusion-height': ['coalesce', ['get','render_height'], 6],
           'fill-extrusion-base': ['coalesce', ['get','render_min_height'], 0],
-          'fill-extrusion-opacity': 0.88,
+          'fill-extrusion-opacity': 0.94,
+          'fill-extrusion-vertical-gradient': true,
         },
+      });
+      this._gl.addLayer({
+        id: 'hang-3d-buildings-outline', source: vecSrc, 'source-layer': 'building',
+        type: 'line', minzoom: 14,
+        paint: { 'line-color': '#2B1A0E', 'line-width': 1, 'line-opacity': 0.35 },
       });
     } catch(e) { /* style without a usable building layer — map still fully works, just flat */ }
   }
