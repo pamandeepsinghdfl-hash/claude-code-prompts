@@ -1,5 +1,8 @@
 # Hang — marketing assets
 
+- `a11y-error-handling-notes.md` — axe-core accessibility audit (before/after violation
+  counts), real measured color-contrast fixes, and the error-handling gaps found and
+  fixed (global error boundary, CDN/tile load failures).
 - `theme-notes.md` — sourced 2026 UI design-trend research (dark-mode tuning, "Liquid
   Glass" panel treatment, gradient-as-branding) behind the app's theme refresh.
 - `design-psychology-notes.md` — sourced UX/cognitive-psychology research (not medical
