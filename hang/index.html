@@ -63,7 +63,12 @@
   @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
 
   #nearby-strip{pointer-events:auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
-  #nearby-count{font-size:10.5px;letter-spacing:0.08em;color:var(--muted);padding:5px 11px;border-radius:999px}
+  /* all:unset also strips whatever the shared .glass class would have
+     given it (class specificity loses to this ID rule) — so the glass
+     look is redeclared explicitly here instead of relying on the class,
+     the same real bug just found and fixed on #weather-toggle below. */
+  #nearby-count{all:unset;cursor:pointer;font-size:10.5px;letter-spacing:0.08em;color:var(--muted);padding:5px 11px;border-radius:999px;
+    background:var(--panel);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.3)}
   #nearby-avatars{display:flex;gap:14px;padding:7px;border-radius:20px;max-width:46vw;overflow-x:auto;scrollbar-width:none}
   #nearby-avatars::-webkit-scrollbar{display:none}
   .mini-avatar{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);transition:transform .15s ease,border-color .2s ease}
@@ -107,6 +112,22 @@
   #status-sheet.open{opacity:1;pointer-events:auto}
   #status-card{width:100%;max-width:460px;max-height:82vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
   #status-sheet.open #status-card{transform:translateY(0)}
+
+  /* ---------- Grindr-style nearby list: closest first, name + distance ---------- */
+  #nearby-list-sheet{position:fixed;inset:0;z-index:60;background:rgba(5,6,10,0.72);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease}
+  #nearby-list-sheet.open{opacity:1;pointer-events:auto}
+  #nearby-list-card{width:100%;max-width:460px;max-height:78vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);position:relative;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
+  #nearby-list-sheet.open #nearby-list-card{transform:translateY(0)}
+  #nearby-list-close{all:unset;position:absolute;top:16px;right:18px;color:var(--faint);font-size:20px;cursor:pointer;line-height:1}
+  .nearby-row{all:unset;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:10px 8px;border-radius:14px;cursor:pointer}
+  .nearby-row:hover,.nearby-row:focus-visible{background:rgba(255,255,255,0.06)}
+  .nearby-row-avatar{flex-shrink:0;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;border:1.5px solid rgba(255,255,255,0.18)}
+  .nearby-row-meta{flex:1;min-width:0}
+  .nearby-row-name{font-size:14px;font-weight:700;color:var(--text)}
+  .nearby-row-cat{font-size:12px;color:var(--muted)}
+  .nearby-row-dist{flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--accent);white-space:nowrap}
+  .nearby-row.sparked .nearby-row-avatar{box-shadow:0 0 0 2px var(--accent)}
+  #nearby-list-empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px}
   .sheet-title{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);margin:0 4px 14px}
   #status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
   .status-opt{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,0.04);transition:all .15s ease}
@@ -274,6 +295,11 @@
   .hotspot-ring.r2{animation-delay:.6s}
   @keyframes hotspot-pulse{0%{transform:scale(.55);opacity:.85}100%{transform:scale(1.7);opacity:0}}
 
+  /* "forming" — a hot spot close enough to becoming permanent that it's
+     visibly under construction, not just hotter */
+  .hotspot-marker.forming{filter:drop-shadow(0 0 7px rgba(255,200,80,0.75))}
+  .hotspot-marker.forming .hotspot-ring{border-color:rgba(255,200,80,0.75);border-style:dashed}
+
   /* spot mode: a small solid pin, not a scaled-down avatar bubble */
   .activity-spot{width:18px;height:18px;border-radius:50%;background:var(--scolor);
     display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;
@@ -295,7 +321,12 @@
   @keyframes rain-fall{to{transform:translateY(112vh)}}
   .snow-flake{position:absolute;top:-16px;color:rgba(255,255,255,0.9);font-size:9px;animation:snow-fall linear infinite}
   @keyframes snow-fall{to{transform:translateY(112vh) translateX(24px)}}
-  #weather-toggle{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+  /* pre-existing bug found while fixing #nearby-count above: all:unset
+     silently strips the .glass class's background/blur/border here too
+     (ID specificity beats the class) — this button has been rendering
+     with zero glass backing this whole time. Redeclared explicitly. */
+  #weather-toggle{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;
+    background:var(--panel);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.3)}
   #radar-sweep{position:fixed;top:50%;left:50%;width:560px;height:560px;margin:-280px 0 0 -280px;z-index:6;pointer-events:none;border-radius:50%;opacity:0.5}
   #radar-sweep::before{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(127,216,230,0.18)}
   #radar-sweep::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(127,216,230,0.0) 0deg,rgba(127,216,230,0.0) 300deg,rgba(127,216,230,0.22) 338deg,rgba(185,240,246,0.55) 356deg,rgba(127,216,230,0.0) 360deg);animation:radar-spin 4.2s linear infinite}
@@ -357,7 +388,7 @@
     <button id="weather-toggle" class="glass" aria-label="Toggle weather">☀️</button>
   </div>
   <div id="nearby-strip">
-    <div id="nearby-count" class="glass">— nearby</div>
+    <button id="nearby-count" class="glass" aria-label="Browse nearby people">— nearby</button>
     <div id="nearby-avatars" class="glass" tabindex="0" role="list" aria-label="Nearby people"></div>
   </div>
 </div>
@@ -416,6 +447,14 @@
     <button id="paywall-unlock">Unlock texting — demo</button>
     <button id="paywall-close-btn">Not now</button>
     <div id="paywall-fine">This prototype has no real payment processor — "Unlock" just previews the flow. A live app would need a real billing provider wired in before this goes anywhere near launch.</div>
+  </div>
+</div>
+
+<div id="nearby-list-sheet" role="dialog" aria-modal="true" aria-label="Nearby people" inert>
+  <div id="nearby-list-card" class="glass">
+    <button id="nearby-list-close" aria-label="Close">×</button>
+    <div class="sheet-title">Nearby, closest first</div>
+    <div id="nearby-list-body" role="list"></div>
   </div>
 </div>
 
@@ -545,7 +584,9 @@ const HOTSPOT_CELL_DEG = 0.0035;      // ~350-400m grid cell
 const HOTSPOT_DECAY = 0.965;          // heat multiplier applied every tick
 const HOTSPOT_MIN_OCCUPANTS = 2;      // people needed in a cell to add heat
 const HOTSPOT_THRESHOLD = 6;          // heat to show as an active Hot Spot
+const BUILDING_THRESHOLD = 11;        // heat to show as "forming" (about to become permanent)
 const COMMUNITY_THRESHOLD = 16;       // sustained heat to spawn a permanent spot
+const LANDMARK_VISITS = 30;           // sustained visits (after promotion) to grow into a bigger landmark
 const HOTSPOT_STORE_KEY = 'hang_hotspot_heat_v1';
 let hotspotCells = {}; // cellKey -> { lat, lon, heat, visits, spawned }
 function hotspotCellKey(pos){
@@ -705,6 +746,16 @@ function tickHotspots(){
       landmarksDirty = true;
       showToast('🏕️ A regular hangout spot just formed nearby — people keep showing up');
     }
+    // A promoted spot that keeps drawing people, tick after tick, grows
+    // into something bigger — real sustained activity at that location,
+    // not a one-time threshold crossing.
+    if (c.spawned && !c.upgraded && c.visits >= LANDMARK_VISITS) {
+      c.upgraded = true;
+      const lm = state.landmarks.find(l => l.id === 'community_'+key);
+      if (lm) { lm.icon = '🏛️'; lm.label = 'Local landmark'; }
+      landmarksDirty = true;
+      showToast('🏛️ That spot has grown into a real local landmark');
+    }
   });
 
   saveHotspots();
@@ -730,6 +781,7 @@ let clusterMarkers = {};
 let landmarkMarkers = [];
 let hotspotMarkers = {};
 let lastRenderMode = null; // 'spot' | 'cluster' | 'detail'
+let lastVisiblePeople = []; // cached each render() so the nearby-list sheet doesn't recompute filtering itself
 const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
@@ -761,7 +813,14 @@ function landmarkIcon(icon, community){
 }
 function hotspotIcon(heat){
   const strength = Math.min(1, heat / COMMUNITY_THRESHOLD);
-  return L.divIcon({ className:'', html:`<div class="hotspot-marker" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>🔥</div>`, iconSize:[30,30], iconAnchor:[15,15] });
+  // Two visible stages before a spot becomes permanent: just "hot" (people
+  // gathering), then "forming" once it's close enough to COMMUNITY_THRESHOLD
+  // that it's genuinely about to become a real landmark — a visible sense
+  // of something being built, not just a flat on/off glow.
+  const forming = heat >= BUILDING_THRESHOLD;
+  const icon = forming ? '🚧' : '🔥';
+  const cls = forming ? 'hotspot-marker forming' : 'hotspot-marker';
+  return L.divIcon({ className:'', html:`<div class="${cls}" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>${icon}</div>`, iconSize:[30,30], iconAnchor:[15,15] });
 }
 // "Spot mode": when exactly one activity filter is active, people are
 // pinpointed with a small solid dot instead of the full avatar bubble
@@ -902,10 +961,12 @@ function renderHotspots(){
   Object.keys(hotspotMarkers).forEach(key => { if (!keep.has(key)) { map.removeLayer(hotspotMarkers[key]); delete hotspotMarkers[key]; } });
   active.forEach(([key, c]) => {
     const pos = [c.lat, c.lon];
-    const label = 'Hot Spot — people keep gathering here';
+    const forming = c.heat >= BUILDING_THRESHOLD;
+    const label = forming ? 'Forming — this spot is about to become a real landmark' : 'Hot Spot — people keep gathering here';
+    const emoji = forming ? '🚧' : '🔥';
     if (!hotspotMarkers[key]) {
       const m = L.marker(pos, { icon: hotspotIcon(c.heat), zIndexOffset:-200 });
-      m.on('click', () => showToast(`🔥 ${label} (${Math.round(c.heat)} heat)`));
+      m.on('click', () => showToast(`${emoji} ${label} (${Math.round(c.heat)} heat)`));
       hotspotMarkers[key] = m.addTo(map);
       const el = m.getElement();
       if (el) el.setAttribute('aria-label', label);
@@ -950,6 +1011,8 @@ function render(){
 
   document.getElementById('nearby-count').textContent = `${visible.length} nearby`;
   renderNearbyStrip(visible);
+  lastVisiblePeople = visible;
+  if (document.getElementById('nearby-list-sheet').classList.contains('open')) renderNearbyListSheet();
 }
 
 /* ---------- top-right strip ---------- */
@@ -972,6 +1035,44 @@ function renderNearbyStrip(visible){
     wrap.appendChild(el);
   });
 }
+
+/* ---------- Grindr-style nearby list: everyone currently visible,
+   closest first, with name + category + live distance — a proper browse
+   view instead of just the small top-strip or hunting around the map. ---------- */
+const nearbyListSheet = document.getElementById('nearby-list-sheet');
+function renderNearbyListSheet(){
+  const body = document.getElementById('nearby-list-body');
+  const sorted = [...lastVisiblePeople].sort((a,b) => a._dist - b._dist);
+  if (!sorted.length) {
+    body.innerHTML = `<div id="nearby-list-empty">Nobody matches your current filters/radius right now.</div>`;
+    return;
+  }
+  body.innerHTML = '';
+  sorted.forEach(p => {
+    const cat = catById(p.cat);
+    const row = document.createElement('button');
+    row.className = 'nearby-row' + (sparkedIds.has(p.id) ? ' sparked' : '');
+    row.setAttribute('role', 'listitem');
+    row.innerHTML = `<div class="nearby-row-avatar" style="background:${cat.grad}" aria-hidden="true">${cat.icon}</div>
+      <div class="nearby-row-meta"><div class="nearby-row-name">${p.name}</div><div class="nearby-row-cat">${cat.label}</div></div>
+      <div class="nearby-row-dist">${p._dist < 1 ? Math.round(p._dist*1000)+' m' : p._dist.toFixed(1)+' km'}</div>`;
+    row.setAttribute('aria-label', `${p.name} — ${cat.label}, ${p._dist < 1 ? Math.round(p._dist*1000)+' meters' : p._dist.toFixed(1)+' kilometers'} away, open profile`);
+    row.onclick = () => { closeNearbyList(); map.panTo(p.pos); openProfile(p); };
+    body.appendChild(row);
+  });
+}
+function openNearbyList(){
+  renderNearbyListSheet();
+  nearbyListSheet.classList.add('open');
+  nearbyListSheet.removeAttribute('inert');
+}
+function closeNearbyList(){
+  nearbyListSheet.classList.remove('open');
+  nearbyListSheet.setAttribute('inert','');
+}
+document.getElementById('nearby-count').onclick = openNearbyList;
+document.getElementById('nearby-list-close').onclick = closeNearbyList;
+nearbyListSheet.onclick = e => { if (e.target === nearbyListSheet) closeNearbyList(); };
 
 /* ---------- category filter chips ---------- */
 function renderFilters(){
@@ -1351,7 +1452,11 @@ function boot(center){
   // without this, an already-recurring spot would silently vanish from
   // the map on every reload even though hotspotCells still remembers it.
   Object.entries(hotspotCells).forEach(([key, c]) => {
-    if (c.spawned) state.landmarks.push({ id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+    if (c.spawned) {
+      state.landmarks.push(c.upgraded
+        ? { id:'community_'+key, icon:'🏛️', pos:[c.lat,c.lon], community:true, label:'Local landmark' }
+        : { id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+    }
   });
   // Seed one guaranteed-visible hot spot at the "plant" cluster near the
   // user, same reasoning as the Sparks plants: with only a handful of
@@ -1471,6 +1576,7 @@ document.getElementById('paywall-unlock').onclick = () => {
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (paywallSheet.classList.contains('open')) { closePaywall(); return; }
+  if (nearbyListSheet.classList.contains('open')) { closeNearbyList(); return; }
   if (statusSheet.classList.contains('open')) { closeStatusSheet(); return; }
   if (profileSheet.classList.contains('open')) { closeProfile(); return; }
   if (document.getElementById('onboard').classList.contains('open')) { closeOnboard(); return; }
