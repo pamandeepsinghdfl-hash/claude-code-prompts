@@ -132,6 +132,13 @@
   .chip{all:unset;flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;transition:all .18s ease;white-space:nowrap}
   .chip.active{background:var(--accent-tint);color:var(--text);border-color:rgba(47,143,134,0.35)}
   .chip .ic{font-size:14px}
+  .hicon{display:inline-block;vertical-align:-0.15em}
+  /* icons sitting on a colorful per-activity gradient badge (not the dark
+     glass chrome) need a fixed light color + shadow instead of inheriting
+     text color, the same way the emoji they replaced always read clearly
+     regardless of the gradient underneath */
+  .cluster-ic svg,.nearby-row-avatar svg,#self-avatar svg,#spark-icon svg,#profile-avatar svg,.hang-marker .avatar3d>svg{
+    color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5))}
 
   /* ---------- bottom nav / self ---------- */
   #self-bar{position:fixed;left:0;right:0;bottom:0;z-index:28;display:flex;justify-content:center;padding:0 14px calc(env(safe-area-inset-bottom) + 14px)}
@@ -455,7 +462,7 @@
   #spark-card{position:fixed;left:14px;right:14px;top:calc(env(safe-area-inset-top) + 110px);z-index:75;border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(-14px) scale(0.97);pointer-events:none;transition:all .35s cubic-bezier(.2,.9,.3,1.1);border:1px solid rgba(127,216,230,0.4);box-shadow:0 0 0 1px rgba(127,216,230,0.12),0 12px 30px rgba(0,0,0,0.5),0 0 28px rgba(127,216,230,0.18)}
   #spark-card.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
   #spark-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;position:relative}
-  #spark-icon::after{content:'✨';position:absolute;top:-6px;right:-6px;font-size:13px}
+  #spark-icon::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg,#1c1008),0 0 8px 1px var(--accent)}
   #spark-title{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:2px;font-weight:700}
   #spark-text{font-size:13px;color:var(--text);line-height:1.35}
   #spark-go{all:unset;flex-shrink:0;padding:9px 13px;border-radius:12px;font-size:12px;font-weight:700;color:#2B1206;background:linear-gradient(135deg,#9BE7F2,#7FD8E6);cursor:pointer}
@@ -500,7 +507,7 @@
   <div style="display:flex;align-items:center;gap:8px;pointer-events:auto">
     <div id="logo" class="glass"><span class="dot"></span><b>HANG</b></div>
     <button id="help-btn" class="glass" aria-label="Show tutorial">?</button>
-    <button id="weather-toggle" class="glass" aria-label="Toggle weather">☀️</button>
+    <button id="weather-toggle" class="glass" aria-label="Toggle weather"></button>
   </div>
   <div id="nearby-strip">
     <button id="nearby-count" class="glass" aria-label="Browse nearby people">— nearby</button>
@@ -516,9 +523,9 @@
 
 <div id="self-bar">
   <div id="self-pill" class="glass">
-    <div id="self-avatar" aria-hidden="true">🙂</div>
+    <div id="self-avatar" aria-hidden="true"></div>
     <div id="self-meta"><div class="name">You</div><div class="status" id="self-status">Status: Chill</div></div>
-    <button id="auto-toggle" class="on">🛰️ Auto</button>
+    <button id="auto-toggle" class="on"></button>
     <button id="self-activity-btn">Set status</button>
   </div>
 </div>
@@ -544,18 +551,18 @@
     <div id="profile-dist"></div>
     <div id="ptt-zone">
       <div id="ptt-label">Walkie‑Talkie<span class="badge-pill badge-free">Free</span></div>
-      <button id="ptt-btn" aria-label="Hold to talk"><span id="ptt-icon" aria-hidden="true">🎙️</span></button>
+      <button id="ptt-btn" aria-label="Hold to talk"><span id="ptt-icon" aria-hidden="true"><svg class="hicon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M9 22h6"/></svg></span></button>
       <div id="ptt-wave"></div>
       <div id="ptt-status">Hold to talk</div>
       <div id="ptt-note">Demo mode: this plays your voice back to you (local echo) so you can feel the press‑and‑hold flow. Reaching a real nearby person needs a live backend — phase 2.</div>
-      <button id="message-btn">💬 Message<span class="badge-pill badge-premium">Premium</span></button>
+      <button id="message-btn"><svg class="hicon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4V4Z"/></svg> Message<span class="badge-pill badge-premium">Premium</span></button>
     </div>
   </div>
 </div>
 
 <div id="paywall-sheet" role="dialog" aria-modal="true" aria-label="Text messaging — Premium" inert>
   <div id="paywall-card" class="glass">
-    <div class="sheet-title">💬 Text messaging — Premium</div>
+    <div class="sheet-title"><svg class="hicon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4V4Z"/></svg> Text messaging — Premium</div>
     <p>Walkie‑Talkie stays free for everyone, always. Sending text messages is a paid
       feature, since it's the one thing here that invites endless scrolling instead
       of actually meeting up.</p>
@@ -578,7 +585,7 @@
 
 <div id="age-gate" role="dialog" aria-modal="true" aria-label="Confirm your age">
   <div id="age-gate-card" class="glass">
-    <div id="age-gate-icon" aria-hidden="true">🔒</div>
+    <div id="age-gate-icon" aria-hidden="true"><svg class="hicon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
     <h2>Confirm your age</h2>
     <p>Hang is for everyone, but a few activity categories (like smoking) aren't shown
       or selectable for accounts under 18. We ask once, up front.</p>
@@ -665,22 +672,62 @@ if (typeof maplibregl === 'undefined') {
   throw new Error('MapLibre GL failed to load from CDN');
 }
 
+// A single cohesive line-icon set replacing the mixed-style emoji that made
+// the chrome (filter chips, status picker, topbar buttons) read as a "cute
+// kids' app" rather than matching the illustrated character art. Every icon
+// shares the same stroke weight/style; a few have small solid accents
+// (wheels, paw pads, a lit cigarette tip) that explicitly opt back into a
+// fill so they still read clearly at 14-19px.
+const ICONS = {
+  sparkle:     `<path d="M12 2 14 10 22 12 14 14 12 22 10 14 2 12 10 10Z" fill="currentColor" stroke="none"/>`,
+  flame:       `<path d="M12 2C9 6 7 9 7 13a5 5 0 0 0 10 0c0-4-2-7-5-11Z"/>`,
+  lotus:       `<circle cx="12" cy="6" r="3"/><path d="M6 20c0-4 2.5-7 6-7s6 3 6 7"/>`,
+  book:        `<path d="M3 5c3-1.5 6-1.5 9 0v14c-3-1.5-6-1.5-9 0V5Z"/><path d="M21 5c-3-1.5-6-1.5-9 0v14c3-1.5 6-1.5 9 0V5Z"/>`,
+  flask:       `<path d="M9 2v6L4 20a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3L15 8V2"/><path d="M8.5 2h7"/><path d="M6.5 16h11"/>`,
+  headphones:  `<path d="M4 18v-6a8 8 0 0 1 16 0v6"/><rect x="2" y="16" width="5" height="7" rx="2"/><rect x="17" y="16" width="5" height="7" rx="2"/>`,
+  dumbbell:    `<path d="M6 7v10M18 7v10M7 12h10"/><rect x="3" y="9" width="4" height="6" rx="1"/><rect x="17" y="9" width="4" height="6" rx="1"/>`,
+  coffee:      `<path d="M4 8h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"/><path d="M17 9h2a3 3 0 0 1 0 6h-2"/><path d="M8 2c0 1-1 1-1 2s1 1 1 2M12 2c0 1-1 1-1 2s1 1 1 2"/>`,
+  cigarette:   `<rect x="2" y="10" width="16" height="4" rx="1"/><rect x="14" y="10" width="4" height="4" fill="currentColor" stroke="none"/><path d="M20 7c1 1 1 2 0 3M22 6c1.5 1.5 1.5 3.5 0 5"/>`,
+  moon:        `<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>`,
+  utensils:    `<path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2M8 11v11"/><path d="M16 2c-1.2 2-1.2 5.5 0 8-1 .8-1 1.8-1 2.5V22"/>`,
+  glasses:     `<path d="M3 10h4a3 3 0 0 1 3 3 3 3 0 0 0 4 0 3 3 0 0 1 3-3h4"/><circle cx="6" cy="14" r="3"/><circle cx="18" cy="14" r="3"/>`,
+  footprints:  `<ellipse cx="7" cy="8" rx="2.3" ry="3.2"/><ellipse cx="16" cy="16" rx="2.3" ry="3.2"/><circle cx="7" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="11.5" r="1" fill="currentColor" stroke="none"/>`,
+  car:         `<path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16M7 16v2M17 16v2"/><circle cx="7.5" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="16.5" cy="16" r="1.3" fill="currentColor" stroke="none"/>`,
+  paw:         `<circle cx="12" cy="15" r="4"/><circle cx="6" cy="9" r="2"/><circle cx="18" cy="9" r="2"/><circle cx="9" cy="5" r="1.8"/><circle cx="15" cy="5" r="1.8"/>`,
+  sun:         `<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>`,
+  cloudRain:   `<path d="M7 15a4 4 0 0 1 .5-7.9A5.5 5.5 0 0 1 18 9.5 3.5 3.5 0 0 1 17.5 16H7Z"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/>`,
+  snow:        `<path d="M12 2v20M3.5 7l17 10M20.5 7l-17 10"/>`,
+  user:        `<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>`,
+  radar:       `<path d="M12 12V4" opacity=".5"/><path d="M12 12a8 8 0 0 1 8 8" opacity=".3"/><path d="M12 12a5 5 0 0 1 5 5" opacity=".6"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>`,
+  mic:         `<rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M9 22h6"/>`,
+  message:     `<path d="M4 4h16v12H8l-4 4V4Z"/>`,
+  lock:        `<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>`,
+  wave:        `<path d="M4 20c2-6 2-11 0-16M9 20c2-7 2-12 0-18M14 20c2-5 2-9 0-13M19 20c1-3 1-6 0-9"/>`,
+  sliders:     `<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.3" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r="2.3" fill="currentColor" stroke="none"/>`,
+  tent:        `<path d="M12 4 3 19h18L12 4Z"/><path d="M12 4v15"/>`,
+  landmark:    `<path d="M5 21V10l7-5 7 5v11"/><path d="M4 21h16"/><path d="M9 21v-6h6v6"/>`,
+  cone:        `<path d="M12 3 5 20h14L12 3Z"/><path d="M8.5 13h7M7.3 16.5h9.4"/>`,
+};
+function icon(name){
+  return `<svg class="hicon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
 const CATEGORIES = [
-  { id:"spirituality", label:"Spirituality", icon:"✨", grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)", portrait:"char-spirituality.png" },
-  { id:"prayer",       label:"Prayer",       icon:"🙏", grad:"linear-gradient(135deg,#F8DCA0,#E8B65C)", portrait:"char-praying.png" },
-  { id:"yoga",         label:"Yoga",         icon:"🧘", grad:"linear-gradient(135deg,#A6F0C8,#5FC78E)", portrait:"char-yoga.png" },
-  { id:"study",        label:"Study",        icon:"📚", grad:"linear-gradient(135deg,#9BE7F2,#5BA7D6)", portrait:"char-study.png" },
-  { id:"science",      label:"Science",      icon:"🔬", grad:"linear-gradient(135deg,#7FE0E0,#3FA7A7)", portrait:"char-science.png" },
-  { id:"music",        label:"Music",        icon:"🎧", grad:"linear-gradient(135deg,#F7A6C4,#E0608F)", portrait:"char-music.png" },
-  { id:"workout",      label:"Workout",      icon:"🏋️", grad:"linear-gradient(135deg,#F2A06B,#D9703B)", portrait:"char-workout.png" },
-  { id:"coffee",       label:"Coffee",       icon:"☕",  grad:"linear-gradient(135deg,#C9A27A,#8A6342)", portrait:"char-coffee.png" },
-  { id:"smoking",      label:"Smoking",      icon:"🚬", grad:"linear-gradient(135deg,#B9C2CE,#6E7684)", ageRestricted:true, portrait:"char-smoking.png" },
-  { id:"sleeping",     label:"Sleeping",     icon:"😴", grad:"linear-gradient(135deg,#A8B4F0,#6E7CC9)", portrait:"char-sleeping.png" },
-  { id:"eating",       label:"Eating",       icon:"🍔", grad:"linear-gradient(135deg,#FFD08A,#E0893F)", portrait:"char-eating.png" },
-  { id:"chill",        label:"Chill",        icon:"😎", grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)", portrait:"char-chill.png" },
-  { id:"walking",      label:"Walking",      icon:"🚶", grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5], portrait:"char-walking.png" },
-  { id:"driving",      label:"Driving",      icon:"🚗", grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
-  { id:"dogwalk",      label:"Dog walk",     icon:"🐕", grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true, portrait:"char-dogwalk.png" },
+  { id:"spirituality", label:"Spirituality", icon:icon('sparkle'), grad:"linear-gradient(135deg,#C9BFFB,#8E7CF0)", portrait:"char-spirituality.png" },
+  { id:"prayer",       label:"Prayer",       icon:icon('flame'), grad:"linear-gradient(135deg,#F8DCA0,#E8B65C)", portrait:"char-praying.png" },
+  { id:"yoga",         label:"Yoga",         icon:icon('lotus'), grad:"linear-gradient(135deg,#A6F0C8,#5FC78E)", portrait:"char-yoga.png" },
+  { id:"study",        label:"Study",        icon:icon('book'), grad:"linear-gradient(135deg,#9BE7F2,#5BA7D6)", portrait:"char-study.png" },
+  { id:"science",      label:"Science",      icon:icon('flask'), grad:"linear-gradient(135deg,#7FE0E0,#3FA7A7)", portrait:"char-science.png" },
+  { id:"music",        label:"Music",        icon:icon('headphones'), grad:"linear-gradient(135deg,#F7A6C4,#E0608F)", portrait:"char-music.png" },
+  { id:"workout",      label:"Workout",      icon:icon('dumbbell'), grad:"linear-gradient(135deg,#F2A06B,#D9703B)", portrait:"char-workout.png" },
+  { id:"coffee",       label:"Coffee",       icon:icon('coffee'),  grad:"linear-gradient(135deg,#C9A27A,#8A6342)", portrait:"char-coffee.png" },
+  { id:"smoking",      label:"Smoking",      icon:icon('cigarette'), grad:"linear-gradient(135deg,#B9C2CE,#6E7684)", ageRestricted:true, portrait:"char-smoking.png" },
+  { id:"sleeping",     label:"Sleeping",     icon:icon('moon'), grad:"linear-gradient(135deg,#A8B4F0,#6E7CC9)", portrait:"char-sleeping.png" },
+  { id:"eating",       label:"Eating",       icon:icon('utensils'), grad:"linear-gradient(135deg,#FFD08A,#E0893F)", portrait:"char-eating.png" },
+  { id:"chill",        label:"Chill",        icon:icon('glasses'), grad:"linear-gradient(135deg,#7FD8E6,#5B5BE6)", portrait:"char-chill.png" },
+  { id:"walking",      label:"Walking",      icon:icon('footprints'), grad:"linear-gradient(135deg,#B8E0D2,#5FA383)", moving:true,  speed:[3,5.5], portrait:"char-walking.png" },
+  { id:"driving",      label:"Driving",      icon:icon('car'), grad:"linear-gradient(135deg,#F7C59F,#E8793D)", moving:true,  speed:[25,45] },
+  { id:"dogwalk",      label:"Dog walk",     icon:icon('paw'), grad:"linear-gradient(135deg,#E8C4A0,#B98A5A)", moving:true,  speed:[2,4.5], erratic:true, portrait:"char-dogwalk.png" },
 ];
 const catById = id => CATEGORIES.find(c => c.id === id);
 // Natural gerund-ish phrasing for the voice briefing — a plain lowercased
@@ -897,9 +944,9 @@ function tickHotspots(){
     if (c.heat < 0.4 && !c.spawned) { delete hotspotCells[key]; return; }
     if (c.heat >= COMMUNITY_THRESHOLD && !c.spawned) {
       c.spawned = true;
-      state.landmarks.push({ id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+      state.landmarks.push({ id:'community_'+key, icon:icon('tent'), pos:[c.lat,c.lon], community:true, label:'Regular spot' });
       landmarksDirty = true;
-      showToast('🏕️ A regular hangout spot just formed nearby — people keep showing up');
+      showToast('A regular hangout spot just formed nearby — people keep showing up');
     }
     // A promoted spot that keeps drawing people, tick after tick, grows
     // into something bigger — real sustained activity at that location,
@@ -907,9 +954,9 @@ function tickHotspots(){
     if (c.spawned && !c.upgraded && c.visits >= LANDMARK_VISITS) {
       c.upgraded = true;
       const lm = state.landmarks.find(l => l.id === 'community_'+key);
-      if (lm) { lm.icon = '🏛️'; lm.label = 'Local landmark'; }
+      if (lm) { lm.icon = icon('landmark'); lm.label = 'Local landmark'; }
       landmarksDirty = true;
-      showToast('🏛️ That spot has grown into a real local landmark');
+      showToast('That spot has grown into a real local landmark');
     }
   });
 
@@ -983,6 +1030,15 @@ class MarkerShim {
     const anchor = opts.icon ? opts.icon.iconAnchor : [0,0];
     this._gl = new maplibregl.Marker({ element: el, anchor:'top-left', offset:[-anchor[0], -anchor[1]] })
       .setLngLat(toLngLat(pos));
+    if (opts.interactive === false){
+      // MapLibre's Marker stamps aria-label="Map marker" onto the element
+      // regardless of interactivity; on a non-interactive div (no role) that
+      // trips axe's aria-prohibited-attr, and it's also just noise for a
+      // marker nobody can act on (the "me" dot — already announced via the
+      // "You" status pill elsewhere on screen).
+      el.removeAttribute('aria-label');
+      el.setAttribute('aria-hidden', 'true');
+    }
     if (opts.zIndexOffset) el.style.zIndex = String(1000 + opts.zIndexOffset);
   }
   _applyIcon(el, icon){
@@ -1231,7 +1287,7 @@ let lastVisiblePeople = []; // cached each render() so the nearby-list sheet doe
 const CLUSTER_ZOOM_MAX = 13;
 
 function meIcon(){
-  return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">🙂<div class="char-leg l"></div><div class="char-leg r"></div></div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
+  return L.divIcon({ className:'', html:`<div class="hang-marker me"><div class="hit"></div><div class="radar" style="--mcolor:#F0C57C"></div><div class="avatar3d" style="--mgrad:linear-gradient(135deg,#F8DCA0,#E8B65C)">${icon('user')}<div class="char-leg l"></div><div class="char-leg r"></div></div><div class="shadow"></div></div>`, iconSize:[46,46], iconAnchor:[23,34] });
 }
 const CAR_SVG = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 1.5 9.2 8H5.3C4 8 3 9 3 10.3V16h2a2 2 0 0 0 4 0h6a2 2 0 0 0 4 0h2v-5.7C21 9 20 8 18.7 8h-3.9L12 1.5Zm-2 8L12 4l2 5.5H10Z"/></svg>`;
 function personIcon(p, sparked){
@@ -1269,9 +1325,9 @@ function hotspotIcon(heat){
   // that it's genuinely about to become a real landmark — a visible sense
   // of something being built, not just a flat on/off glow.
   const forming = heat >= BUILDING_THRESHOLD;
-  const icon = forming ? '🚧' : '🔥';
+  const markIcon = forming ? icon('cone') : icon('flame');
   const cls = forming ? 'hotspot-marker forming' : 'hotspot-marker';
-  return L.divIcon({ className:'', html:`<div class="${cls}" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>${icon}</div>`, iconSize:[30,30], iconAnchor:[15,15] });
+  return L.divIcon({ className:'', html:`<div class="${cls}" style="--hstrength:${strength.toFixed(2)}"><div class="hotspot-ring"></div><div class="hotspot-ring r2"></div>${markIcon}</div>`, iconSize:[30,30], iconAnchor:[15,15] });
 }
 /* GTA-style zoom LOD: zoomed out shows clustered activity blips (cheap,
    readable at a glance); zoomed in resolves into full detailed avatars.
@@ -1395,7 +1451,7 @@ function renderLandmarks(){
   if (!visible) return;
   (state.landmarks||[]).forEach(l => {
     const m = L.marker(l.pos, { icon: landmarkIcon(l.icon), zIndexOffset:-100 });
-    m.on('click', () => showToast(`🏕️ ${l.label || 'Regular spot'} — people keep gathering here`));
+    m.on('click', () => showToast(`${l.label || 'Regular spot'} — people keep gathering here`));
     m.addTo(map);
     const el = m.getElement();
     if (el) el.setAttribute('aria-label', `${l.label || 'Regular spot'} — people keep gathering here`);
@@ -1594,7 +1650,7 @@ function setStatus(catId, auto, restore){
   if (!c || (state.status === catId && !restore)) return;
   state.status = catId;
   document.getElementById('self-status').textContent = 'Status: ' + c.label + (auto ? ' (auto)' : '');
-  document.getElementById('self-avatar').textContent = c.icon;
+  document.getElementById('self-avatar').innerHTML = c.icon;
   document.getElementById('self-avatar').style.background = c.grad;
   renderStatusGrid();
   savePrefs();
@@ -1609,7 +1665,7 @@ function renderStatusGrid(){
     const locked = !!(c.ageRestricted && state.isMinor);
     const opt = document.createElement('button');
     opt.className = 'status-opt' + (state.status===c.id ? ' active' : '') + (locked ? ' locked' : '');
-    opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>${locked ? '<span class="lock-tag">🔒</span>' : ''}`;
+    opt.innerHTML = `<span class="ic">${c.icon}</span><span>${c.label}</span>${locked ? `<span class="lock-tag">${icon('lock')}</span>` : ''}`;
     opt.onclick = locked
       ? () => showToast('Not available for accounts under 18')
       : () => { setStatus(c.id, false); closeStatusSheet(); };
@@ -1663,7 +1719,7 @@ function handleGeoAuto(pos){
 function toggleAutoDetect(){
   state.autoDetect = !state.autoDetect;
   const btn = document.getElementById('auto-toggle');
-  if (btn) { btn.classList.toggle('on', state.autoDetect); btn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
+  if (btn) { btn.classList.toggle('on', state.autoDetect); btn.innerHTML = icon('radar') + (state.autoDetect ? ' Auto' : ' Off'); }
   showToast(state.autoDetect ? 'Auto-detecting travel from movement — map will follow you' : 'Auto-detect off — status stays manual, map stays put');
   if (!state.autoDetect) autoSpeedSamples.length = 0;
   else { userPannedAway = false; map.panTo(state.me, { animate:true }); } // re-enabling Auto always resumes following
@@ -1728,13 +1784,13 @@ function manageSkyEffects(){
 /* ---------- weather overlay (visual only, not simulated physics) ---------- */
 let weatherMode = 'clear';
 const WEATHER_CYCLE = ['clear','rain','snow'];
-const WEATHER_ICON = { clear:'☀️', rain:'🌧️', snow:'❄️' };
+const WEATHER_ICON = { clear:icon('sun'), rain:icon('cloudRain'), snow:icon('snow') };
 function setWeather(mode){
   weatherMode = mode;
   const layer = document.getElementById('weather-layer');
   layer.innerHTML = '';
   const btn = document.getElementById('weather-toggle');
-  if (btn) btn.textContent = WEATHER_ICON[mode];
+  if (btn) btn.innerHTML = WEATHER_ICON[mode];
   if (mode === 'clear') return;
   const count = mode === 'rain' ? 70 : 45;
   for (let i=0;i<count;i++){
@@ -1945,12 +2001,13 @@ function openProfile(p){
   state.selected = p;
   const cat = catById(p.cat);
   document.getElementById('profile-avatar').style.background = cat.grad;
-  document.getElementById('profile-avatar').textContent = cat.icon;
+  document.getElementById('profile-avatar').innerHTML = cat.icon;
   document.getElementById('profile-name').textContent = p.name;
   document.getElementById('profile-sub').textContent = `Right now: ${cat.label}`;
   document.getElementById('profile-dist').textContent = `${p._dist.toFixed(1)} km away`;
   const msgBtn = document.getElementById('message-btn');
-  msgBtn.innerHTML = state.premiumText ? '💬 Message<span class="badge-pill badge-free">Unlocked</span>' : '💬 Message<span class="badge-pill badge-premium">Premium</span>';
+  const msgIcon = icon('message');
+  msgBtn.innerHTML = state.premiumText ? `${msgIcon} Message<span class="badge-pill badge-free">Unlocked</span>` : `${msgIcon} Message<span class="badge-pill badge-premium">Premium</span>`;
   profileSheet.classList.add('open');
   profileSheet.removeAttribute('inert');
   const card = document.getElementById('profile-card');
@@ -2021,7 +2078,7 @@ function triggerSpark(person){
 
   const cat = catById(person.cat);
   const iconEl = document.getElementById('spark-icon');
-  iconEl.textContent = cat.icon;
+  iconEl.innerHTML = cat.icon;
   iconEl.style.background = cat.grad;
   document.getElementById('spark-text').textContent = `You and ${person.name} are both doing ${cat.label.toLowerCase()} — ${person._dist.toFixed(1)}km apart, right now.`;
   const card = document.getElementById('spark-card');
@@ -2108,15 +2165,15 @@ function showToast(msg){
 /* ---------- onboarding tutorial ---------- */
 const ONBOARD_KEY = 'hang-onboarded';
 const ONBOARD_STEPS = [
-  { icon:'👋', color:'#2F8F86', title:'Welcome to Hang', body:"See who's nearby and what they're up to, live on the map. Nobody shows up unless they choose to — you control exactly what you share." },
-  { icon:'🧘', color:'#A6F0C8', title:'Set your status', body:'Tap "Set status" to pick what you\'re doing right now — yoga, study, prayer, coffee, whatever\'s true. That\'s what puts your avatar on the map for others.' },
-  { icon:'🎚️', color:'#C9A227', title:'Filter & radius', body:'Use the category chips to show only certain activities, and the radius control to set how far out you look — from 1km up to 25km.' },
-  { icon:'🎙️', color:'#8B2E2E', title:'Walkie-Talkie', body:"Tap anyone nearby to open their profile, then press and hold the mic button to talk — just like a real walkie-talkie." },
+  { icon:icon('wave'), color:'#2F8F86', title:'Welcome to Hang', body:"See who's nearby and what they're up to, live on the map. Nobody shows up unless they choose to — you control exactly what you share." },
+  { icon:icon('lotus'), color:'#A6F0C8', title:'Set your status', body:'Tap "Set status" to pick what you\'re doing right now — yoga, study, prayer, coffee, whatever\'s true. That\'s what puts your avatar on the map for others.' },
+  { icon:icon('sliders'), color:'#C9A227', title:'Filter & radius', body:'Use the category chips to show only certain activities, and the radius control to set how far out you look — from 1km up to 25km.' },
+  { icon:icon('mic'), color:'#8B2E2E', title:'Walkie-Talkie', body:"Tap anyone nearby to open their profile, then press and hold the mic button to talk — just like a real walkie-talkie." },
 ];
 let obStep = 0;
 function renderOnboard(){
   const s = ONBOARD_STEPS[obStep];
-  document.getElementById('onboard-icon').textContent = s.icon;
+  document.getElementById('onboard-icon').innerHTML = s.icon;
   document.getElementById('onboard-icon').style.background = s.color + '33';
   document.getElementById('onboard-icon').style.border = '1px solid ' + s.color + '66';
   document.getElementById('onboard-title').textContent = s.title;
@@ -2169,8 +2226,8 @@ function boot(center){
   Object.entries(hotspotCells).forEach(([key, c]) => {
     if (c.spawned) {
       state.landmarks.push(c.upgraded
-        ? { id:'community_'+key, icon:'🏛️', pos:[c.lat,c.lon], community:true, label:'Local landmark' }
-        : { id:'community_'+key, icon:'🏕️', pos:[c.lat,c.lon], community:true, label:'Regular spot' });
+        ? { id:'community_'+key, icon:icon('landmark'), pos:[c.lat,c.lon], community:true, label:'Local landmark' }
+        : { id:'community_'+key, icon:icon('tent'), pos:[c.lat,c.lon], community:true, label:'Regular spot' });
     }
   });
   // Seed one guaranteed-visible hot spot at the "plant" cluster near the
@@ -2191,7 +2248,7 @@ function boot(center){
   renderStatusGrid();
   setStatus(state.status, false, true); // sync avatar/label to the restored (or default) status
   const autoBtn = document.getElementById('auto-toggle');
-  if (autoBtn) { autoBtn.classList.toggle('on', state.autoDetect); autoBtn.textContent = state.autoDetect ? '🛰️ Auto' : '🛰️ Off'; }
+  if (autoBtn) { autoBtn.classList.toggle('on', state.autoDetect); autoBtn.innerHTML = icon('radar') + (state.autoDetect ? ' Auto' : ' Off'); }
   applyDayNight();
   setWeather('clear'); // immediate default while the real check below is in flight — never left showing a fabricated condition
   syncRealWeather();
@@ -2252,7 +2309,7 @@ ageSubmitBtn.onclick = () => {
   state.isMinor = age < 18;
   try { localStorage.setItem(AGE_GATE_KEY, JSON.stringify({ isMinor: state.isMinor, ts: Date.now() })); } catch(e){}
   document.getElementById('age-gate').style.display = 'none';
-  showToast(state.isMinor ? "You're all set — some categories are hidden for your account" : "You're all set 🎉");
+  showToast(state.isMinor ? "You're all set — some categories are hidden for your account" : "You're all set");
   startApp();
 };
 let ageKnown = false;
@@ -2286,7 +2343,7 @@ document.getElementById('paywall-unlock').onclick = () => {
   try { localStorage.setItem(PREMIUM_KEY, '1'); } catch(e){}
   closePaywall();
   const msgBtn = document.getElementById('message-btn');
-  msgBtn.innerHTML = '💬 Message<span class="badge-pill badge-free">Unlocked</span>';
+  msgBtn.innerHTML = `${icon('message')} Message<span class="badge-pill badge-free">Unlocked</span>`;
   showToast('✓ Unlocked (demo) — no real payment was processed');
   beep(520, 760, 0.12);
 };
