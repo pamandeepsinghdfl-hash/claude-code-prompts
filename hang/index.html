@@ -106,6 +106,9 @@
      the same real bug just found and fixed on #weather-toggle below. */
   #nearby-count{all:unset;cursor:pointer;font-size:10.5px;letter-spacing:0.08em;color:var(--muted);padding:5px 11px;border-radius:999px;
     background:var(--panel);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid var(--line);box-shadow:0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.3)}
+  #nearby-count.count-pop{animation:count-pop .4s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes count-pop{0%{transform:scale(1)}40%{transform:scale(1.14);color:var(--accent)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){#nearby-count.count-pop{animation:none}}
   #nearby-avatars{display:flex;gap:14px;padding:7px;border-radius:20px;max-width:46vw;overflow-x:auto;scrollbar-width:none}
   #nearby-avatars::-webkit-scrollbar{display:none}
   .mini-avatar{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);transition:transform .15s ease,border-color .2s ease}
@@ -130,7 +133,9 @@
   #filter-row{pointer-events:auto;display:flex;gap:7px;padding:9px 11px;border-radius:999px;overflow-x:auto;max-width:92vw;scrollbar-width:none}
   #filter-row::-webkit-scrollbar{display:none}
   .chip{all:unset;flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;transition:all .18s ease;white-space:nowrap}
-  .chip.active{background:var(--accent-tint);color:var(--text);border-color:rgba(47,143,134,0.35)}
+  .chip.active{background:var(--accent-tint);color:var(--text);border-color:rgba(47,143,134,0.35);animation:chip-pop .28s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes chip-pop{0%{transform:scale(0.88)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){.chip.active{animation:none}}
   .chip .ic{font-size:14px}
   .hicon{display:inline-block;vertical-align:-0.15em}
   /* icons sitting on a colorful per-activity gradient badge (not the dark
@@ -163,7 +168,10 @@
   #nearby-list-card{width:100%;max-width:460px;max-height:78vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);position:relative;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
   #nearby-list-sheet.open #nearby-list-card{transform:translateY(0)}
   #nearby-list-close{all:unset;position:absolute;top:16px;right:18px;color:var(--faint);font-size:20px;cursor:pointer;line-height:1}
-  .nearby-row{all:unset;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:10px 8px;border-radius:14px;cursor:pointer}
+  .nearby-row{all:unset;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:10px 8px;border-radius:14px;cursor:pointer;
+    animation:row-in .32s cubic-bezier(.2,.8,.3,1) backwards;animation-delay:var(--i-delay,0s)}
+  @keyframes row-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion: reduce){.nearby-row{animation:none}}
   .nearby-row:hover,.nearby-row:focus-visible{background:rgba(255,255,255,0.06)}
   .nearby-row-avatar{flex-shrink:0;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;border:1.5px solid rgba(255,255,255,0.18);overflow:hidden;position:relative}
   .nearby-row-avatar img{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))}
@@ -417,8 +425,9 @@
 
   #radius-circle{pointer-events:none}
 
-  #toast{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:50%;transform:translateX(-50%) translateY(-8px);z-index:70;padding:10px 16px;border-radius:14px;font-size:12.5px;opacity:0;pointer-events:none;transition:all .25s ease;max-width:86vw;text-align:center}
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:50%;transform:translateX(-50%) translateY(-10px) scale(0.92);z-index:70;padding:10px 16px;border-radius:14px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .4s cubic-bezier(.34,1.56,.64,1);max-width:86vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  @media (prefers-reduced-motion: reduce){#toast{transition:opacity .2s ease}}
 
   #banner{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 86px);left:14px;right:14px;z-index:15;padding:9px 13px;border-radius:14px;font-size:11px;color:var(--faint);text-align:center;line-height:1.5;pointer-events:none}
 
@@ -478,6 +487,30 @@
   @media (prefers-reduced-motion: reduce){#radar-sweep::after,.radar-ring,#profile-card.glitch-in,.spark-line{animation:none!important}}
 
   @media (prefers-reduced-motion: reduce){.avatar3d,.shadow,.ring,.radar,#ptt-btn.live,.dot,#logo b{animation:none!important}}
+
+  /* ---------- tactile press feedback ----------
+     Most buttons had no feedback at all on tap — real native apps (and
+     anything that feels "current") compress slightly under a finger so the
+     tap itself feels acknowledged before whatever it triggers happens. */
+  #help-btn,#weather-toggle,#nearby-count,#self-activity-btn,#auto-toggle,
+  #message-btn,#spark-go,#onboard-next,#onboard-skip,#age-gate-submit,
+  #status-close,#nearby-list-close,#profile-close,.nearby-row,.status-opt,
+  .chip,#paywall-unlock,#paywall-close-btn{
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),background .15s ease,border-color .15s ease,opacity .15s ease;
+  }
+  #help-btn:active,#weather-toggle:active,#nearby-count:active,#self-activity-btn:active,
+  #auto-toggle:active,#message-btn:active,#spark-go:active,#onboard-next:active,
+  #onboard-skip:active,#age-gate-submit:active,#status-close:active,#nearby-list-close:active,
+  #profile-close:active,.nearby-row:active,.status-opt:active,.chip:active,
+  #paywall-unlock:active,#paywall-close-btn:active{
+    transform:scale(0.94);
+  }
+  @media (prefers-reduced-motion: reduce){
+    #help-btn,#weather-toggle,#nearby-count,#self-activity-btn,#auto-toggle,
+    #message-btn,#spark-go,#onboard-next,#onboard-skip,#age-gate-submit,
+    #status-close,#nearby-list-close,#profile-close,.nearby-row,.status-opt,
+    .chip,#paywall-unlock,#paywall-close-btn{transition:none}
+  }
 </style>
 </head>
 <body>
@@ -745,6 +778,7 @@ const activityPhrase = cat => ACTIVITY_PHRASE[cat.id] || cat.label.toLowerCase()
 const NAMES = ["Maya","Theo","Priya","Noah","Ines","Kian","Sofia","Leo","Amara","Jonas","Rhea","Mateo","Wren","Zara","Oli","Tess","Dev","Luca","Nia","Sam"];
 const RADII = [1,5,10,15,25];
 
+const PREFERS_REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const state = { me:[37.7749,-122.4194], radius:15, activeFilters:new Set(), status:"chill", people:[], selected:null, autoDetect:true, isMinor:null, premiumText:false };
 
 /* ---------- preferences: status/radius/auto-detect used to reset on
@@ -1050,7 +1084,34 @@ class MarkerShim {
   addTo(map){ this._gl.addTo(map._gl); return this; }
   on(evt, fn){ (this._listeners[evt] = this._listeners[evt]||[]).push(fn); return this; }
   getElement(){ return this._el; }
-  setLatLng(pos){ this._pos = pos; this._gl.setLngLat(toLngLat(pos)); return this; }
+  // Walking/driving/dog-walk people used to teleport to their new spot
+  // once a second (a straight setLngLat snap) — every real "live location"
+  // app (Life360, Find My, Snap Map, Uber) glides the dot between fixes
+  // instead, which is most of what makes them feel alive rather than a
+  // slideshow. Tweening here — rather than via a CSS transition on the
+  // marker's transform — means it only animates genuine position changes;
+  // MapLibre still recomputes the correct on-screen spot every frame from
+  // whatever lngLat we feed it, so camera pans/zooms during the glide
+  // aren't affected and don't lag.
+  setLatLng(pos){
+    const from = this._pos;
+    this._pos = pos;
+    if (this._moveRaf) cancelAnimationFrame(this._moveRaf);
+    if (PREFERS_REDUCED_MOTION || !from || (from[0] === pos[0] && from[1] === pos[1])) {
+      this._gl.setLngLat(toLngLat(pos));
+      return this;
+    }
+    const start = performance.now();
+    const dur = 900;
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const ease = 1 - Math.pow(1 - t, 3);
+      this._gl.setLngLat(toLngLat([from[0] + (pos[0]-from[0])*ease, from[1] + (pos[1]-from[1])*ease]));
+      this._moveRaf = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    this._moveRaf = requestAnimationFrame(step);
+    return this;
+  }
   setIcon(icon){ this._applyIcon(this._el, icon); return this; }
   remove(){ this._gl.remove(); }
 }
@@ -1515,7 +1576,15 @@ function render(){
   renderLandmarks();
   renderHotspots();
 
-  document.getElementById('nearby-count').textContent = `${visible.length} nearby`;
+  const nearbyCountEl = document.getElementById('nearby-count');
+  const nextCountText = `${visible.length} nearby`;
+  if (nearbyCountEl.textContent !== nextCountText) {
+    nearbyCountEl.textContent = nextCountText;
+    if (!PREFERS_REDUCED_MOTION) {
+      nearbyCountEl.classList.remove('count-pop'); void nearbyCountEl.offsetWidth; // restart the animation even if it's still mid-pulse from the last change a second ago
+      nearbyCountEl.classList.add('count-pop');
+    }
+  }
   renderNearbyStrip(visible);
   lastVisiblePeople = visible;
   if (document.getElementById('nearby-list-sheet').classList.contains('open')) renderNearbyListSheet();
@@ -1554,7 +1623,7 @@ function renderNearbyListSheet(){
     return;
   }
   body.innerHTML = '';
-  sorted.forEach(p => {
+  sorted.forEach((p, i) => {
     const cat = catById(p.cat);
     // `role="listitem"` isn't an ARIA-allowed role override on <button> (its
     // implicit role doesn't permit it — axe flags this exact combination).
@@ -1565,6 +1634,7 @@ function renderNearbyListSheet(){
     li.setAttribute('role', 'listitem');
     const row = document.createElement('button');
     row.className = 'nearby-row' + (sparkedIds.has(p.id) ? ' sparked' : '');
+    row.style.setProperty('--i-delay', Math.min(i, 10) * 0.03 + 's');
     const avatarInner = cat.portrait
       ? `<img src="${cat.portrait}" alt="" loading="lazy">`
       : cat.icon;
